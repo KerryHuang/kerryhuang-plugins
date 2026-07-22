@@ -42,6 +42,33 @@
       "author": {
         "name": "KerryHuang"
       }
+    },
+    {
+      "name": "database-sqlserver",
+      "source": "./plugins/database-sqlserver",
+      "description": "SQL Server 資料庫 — table/view 慣例、TableDescription 生成、EF Core migration 工具與疑難排解",
+      "version": "0.1.0",
+      "author": {
+        "name": "KerryHuang"
+      }
+    },
+    {
+      "name": "ui-ux",
+      "source": "./plugins/ui-ux",
+      "description": "UI/UX 設計知識庫 — 風格系統、版面、配色、互動慣例、資訊呈現",
+      "version": "0.1.0",
+      "author": {
+        "name": "KerryHuang"
+      }
+    },
+    {
+      "name": "desktop-avalonia",
+      "source": "./plugins/desktop-avalonia",
+      "description": "Avalonia 桌面 .NET — MVVM 慣例、跨平台路徑、桌面應用建置與發佈",
+      "version": "0.1.0",
+      "author": {
+        "name": "KerryHuang"
+      }
     }
   ]
 }

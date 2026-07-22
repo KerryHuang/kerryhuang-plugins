@@ -20,6 +20,9 @@ claude plugin install sdlc
 | [dev-flow](./plugins/dev-flow/README.md) | 跨語言開發工作流 — git 生命週期、工作編排、context 治理 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | .NET Clean Architecture 後端 — CQRS/Repository/EF Core/Dapper 產碼、測試、agents |
 | [frontend-vue](./plugins/frontend-vue/README.md) | Vue 3 + TypeScript + Quasar 前端 — 架構、composable、除錯、i18n、OpenSpec |
+| [database-sqlserver](./plugins/database-sqlserver/README.md) | SQL Server 資料庫 — table/view 慣例、TableDescription 生成、EF Core migration |
+| [ui-ux](./plugins/ui-ux/README.md) | UI/UX 設計知識庫 — 風格系統、版面、配色、互動慣例 |
+| [desktop-avalonia](./plugins/desktop-avalonia/README.md) | Avalonia 桌面 .NET — MVVM 慣例、跨平台、建置發佈 |
 
 ## License
 
