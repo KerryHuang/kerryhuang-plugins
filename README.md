@@ -6,7 +6,7 @@ A multi-plugin marketplace for Claude Code.
 
 ```bash
 # 1. Register marketplace (one-time)
-claude plugin marketplace add https://github.com/KerryHuang/sdlc-upstream.git
+claude plugin marketplace add https://github.com/KerryHuang/kerryhuang-plugins.git
 
 # 2. Install a plugin
 claude plugin install sdlc
