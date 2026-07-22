@@ -1,4 +1,4 @@
-# sdlc-upstream
+# kerryhuang-plugins
 
 A Claude Code plugin for **software development lifecycle upstream phases** — everything before implementation: requirements, system analysis, specification, verification, and ticket creation.
 
@@ -8,7 +8,7 @@ A Claude Code plugin for **software development lifecycle upstream phases** — 
 
 ```bash
 # 1. Register marketplace (one-time)
-claude plugin marketplace add git@github.com:KerryHuang/sdlc-upstream.git
+claude plugin marketplace add git@github.com:KerryHuang/kerryhuang-plugins.git
 
 # 2. Install plugin
 claude plugin install sdlc
@@ -150,7 +150,7 @@ All analysis/spec skills enforce a strict no-guessing policy:
 ## Project Structure
 
 ```
-sdlc-upstream/
+kerryhuang-plugins/
 ├── .claude-plugin/
 │   ├── marketplace.json
 │   └── plugin.json
