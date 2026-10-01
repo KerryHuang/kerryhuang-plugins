@@ -13,3 +13,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 *.pyo
+
+# 本機外洩黑名單（含公司資訊，絕不可提交）
+.leak-denylist

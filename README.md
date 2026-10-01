@@ -55,10 +55,27 @@ plugins/<plugin>/
   skills/<skill>/SKILL.md         # skills，自動發現
   agents/<agent>.md               # agents，自動發現
   references/ · templates/        # 共用素材，由 skill 以 ${CLAUDE_PLUGIN_ROOT}/ 引用
+  CHANGELOG.md                    # 版本紀錄，最新條目須與 plugin.json 版本一致
+scripts/ci/validate.py            # 內容驗證（CI 與 pre-commit 共用）
 ```
 
 開發慣例見 `.claude/rules/`：外掛結構、skill 撰寫規範（SKILL.md 300 行上限、實作邏輯放 `references/`）、
-版本號規則（bug fix 進 patch、新 skill 進 minor、plugin.json schema 破壞性變更進 major）。
+版本號與 CHANGELOG 規則（改 skill／agent／reference 時同一個 commit 內補 CHANGELOG 並 bump 版號）。
+
+### 驗證
+
+`scripts/ci/validate.py` 會檢查版號一致（plugin.json／marketplace.json／README／CHANGELOG）、frontmatter、
+交互引用、README 的 skills 與 agents 表，以及外洩樣式（個人路徑、非範例 email、內網 IP）。
+GitHub Actions 在每次 push 與 PR 時執行它與各 plugin 的腳本測試。
+
+本機啟用 pre-commit（每個 clone 一次）：
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
+pre-commit 另會讀 repo 根目錄的 `.leak-denylist`（已 gitignore、只存在本機），一行一個不得出現的字串，
+`regex:` 開頭為正規式；命中即擋下 commit。
 
 ## 授權
 
