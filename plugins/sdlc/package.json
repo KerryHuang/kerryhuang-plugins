@@ -1,0 +1,10 @@
+{
+  "name": "kerryhuang-sdlc",
+  "private": true,
+  "description": "sdlc plugin as a Pi package. Version lives in .claude-plugin/plugin.json; Pi-specific wording is in references/harness-terms.md.",
+  "license": "MIT",
+  "keywords": ["pi-package", "sdlc"],
+  "pi": {
+    "skills": ["./skills"]
+  }
+}
