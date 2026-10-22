@@ -72,9 +72,11 @@ sdlc-spec-rules-since: 2026-10-01
 | 技能 | 用法 | 說明 |
 |---|---|---|
 | **live-drive** | `/sa-flow:live-drive <investigate\|manual\|e2e\|explore> [URL]` | 操作執行中的系統；正式環境禁止異動 |
-| **qa-verify** | `/sa-flow:qa-verify <功能或票號>` | 依 FFS 驗收標準逐條實機驗收 |
+| **qa-verify** | `/sa-flow:qa-verify <功能或票號> [--from-ticket] [--no-comment]` | 依 FFS 驗收標準逐條實機驗收；無 FFS 的 Bug 票走票面模式；可唯讀查核 DB 落地的資料斷言 |
+| **qa-sweep** | `/sa-flow:qa-sweep [票號] [--dry-run]` | 批次撈指派給我的待測票，交 qa-verify 或後端驗證後寫回狀態、通知父票或開 Dev 子票 |
 | **operation-manual** | `/sa-flow:operation-manual <功能目錄或 URL>` | 操作手冊與教育訓練簡報（PDF／PPTX） |
-| **sample-verify** | `/sa-flow:sample-verify <規格> [原始碼範圍]` | 抽樣原始碼驗證規格覆蓋度 |
+| **sample-verify** | `/sa-flow:sample-verify <規格> [原始碼範圍] [--full]` | 抽樣原始碼驗證規格覆蓋度；有實作錨點檔時只重驗變動處 |
+| **survey-existing-system** | `/sa-flow:survey-existing-system [app 路徑或行為範圍]` | 勘察現役系統某段行為，產出現況分析文件 |
 
 ### 文件工具
 
@@ -83,6 +85,7 @@ sdlc-spec-rules-since: 2026-10-01
 | **meeting-minutes** | `/sa-flow:meeting-minutes [即時\|整理] [主題]` | 結構化會議記錄 |
 | **pdf-converter** | `/sa-flow:pdf-converter <PDF> [--to word\|excel]` | PDF 轉 Word／Excel，含回轉驗證 |
 | **write-doc** | `/sa-flow:write-doc [路徑]` | 把口述或既有內容落檔 |
+| **consolidate-docs** | `/sa-flow:consolidate-docs [--apply] [子目錄]` | 票 Done 後把票號後綴的 CR 文件驗證後合併回主規格（預設 dry-run） |
 | **foxpro-analyzer** | `/sa-flow:foxpro-analyzer {檔案路徑}` | FoxPro 舊系統分析，起頭的鏈套用 parity 模式 |
 
 ### 派工
@@ -109,7 +112,7 @@ sdlc-spec-rules-since: 2026-10-01
 - **分析產物共用**：勘察結果落在 `{功能目錄}/analysis/`，下游先讀再補缺，不重複蒐證。
 - **chain profile**：依功能規模走完整鏈或 lite 鏈，小功能不付大功能的流程稅（`references/chain-profile.md`）。
 
-Agents：spec-writer、domain-advisor、scout、report-writer、spec-sampler、doc-fidelity-reviewer、browser-surveyor、qa-planner、qa-runner-ui、qa-fixture、manual-explorer、manual-writer、manual-reviewer。
+Agents：spec-writer、domain-advisor、scout、report-writer、spec-sampler、doc-fidelity-reviewer、browser-surveyor、qa-planner、qa-runner-ui、qa-fixture、manual-explorer、manual-writer、manual-reviewer、silent-failure-hunter。
 
 ## 完整流程
 
@@ -133,6 +136,8 @@ Agents：spec-writer、domain-advisor、scout、report-writer、spec-sampler、d
 [ superpowers:writing-plans ] → 實作 → 審查
          ↓
 [ sa-flow:qa-verify ]          → 驗收報告
+         ↓
+[ sa-flow:consolidate-docs ]   → CR 文件併回主規格
 ```
 
 功能調整（CR）從 `requirement --change` 開始，接 `specify-backend --change`、`specify-frontend --change`，其餘相同。各棒的前置條件與交棒規則見 `references/pipeline.md` 與 `references/handoff-protocol.md`。

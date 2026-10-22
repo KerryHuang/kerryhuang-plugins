@@ -2,9 +2,10 @@
 """qa-verify 判定：每條 TC 一個機械狀態，人只裁「這算誰的」。
 
 只讀事實欄位（結果／訊息／訊息位置／欄位變化／視覺標記／畫面斷言／步驟失敗次數），永不讀 描述。
-預期有四槽：訊息、欄位變化、視覺標記、畫面斷言。查詢頁的列數、合計、欄存在與否等非訊息事實一律進
+預期有五槽：訊息、欄位變化、視覺標記、畫面斷言、資料斷言。查詢頁的列數、合計、欄存在與否等非訊息事實一律進
 畫面斷言槽（逐條 {目標, 期望, 比對} 對 runner 的 {目標, 實際}）；不得塞進訊息槽——語意訊息模式
-觀察無訊息即 FAIL（查詢頁多條 TC 假 FAIL 的成因）。
+觀察無訊息即 FAIL（查詢頁多條 TC 假 FAIL 的成因）。畫面讀不到的 DB 落地事實進資料斷言槽，
+對 fixture 跑完後唯讀查核的 db-check.yml（runner 沒有 DB 工具，放畫面斷言必成無法比對）。
 plan 與 run 的 TC 集合必須完全相等——缺觀察、多觀察都拋錯，沒有「查不到＝通過」。
 
 單一 TC 的狀態判定優先序（`_judge_case` 內，依序判斷、命中即回，不繼續往下比對）：
@@ -81,16 +82,22 @@ def _assertion_ok(cmp, expected, actual):
     raise ValueError(f"未知的畫面斷言比對「{cmp}」")
 
 
-def _eval_assertions(expected, observed):
-    """逐條比對；runner 沒回報該目標（條目缺漏）＝無法比對，不是不成立。實際 null＝畫面上找不到。"""
+def _eval_assertions(expected, observed, slot="畫面斷言"):
+    """逐條比對；觀察沒回報該目標（條目缺漏）＝無法比對，不是不成立。實際 null＝畫面上找不到。
+    `等於目標`：期望是同槽另一個目標名，比兩邊實際值（修改前後相同之類，期望值在規劃時不可知）。"""
     got = {}
     for o in observed or []:
         got.setdefault(o["目標"], o.get("實際"))
     out = []
     for e in expected or []:
-        item = {"目標": e["目標"], "期望": e.get("期望"), "比對": e["比對"]}
-        if e["目標"] not in got:
-            out.append({**item, "實際": None, "結果": "無法比對"})
+        item = {"槽": slot, "目標": e["目標"], "期望": e.get("期望"), "比對": e["比對"]}
+        ref = e.get("期望") if e["比對"] == "等於目標" else None
+        if e["目標"] not in got or (ref is not None and ref not in got):
+            out.append({**item, "實際": got.get(e["目標"]), "結果": "無法比對"})
+        elif ref is not None:
+            item["期望"] = f"{ref}＝{got[ref]}"
+            ok = got[e["目標"]] is not None and _assertion_ok("等於", got[ref], got[e["目標"]])
+            out.append({**item, "實際": got[e["目標"]], "結果": "通過" if ok else "不成立"})
         else:
             ok = _assertion_ok(e["比對"], e.get("期望"), got[e["目標"]])
             out.append({**item, "實際": got[e["目標"]], "結果": "通過" if ok else "不成立"})
@@ -197,14 +204,15 @@ def _judge_case(case, mapping, model_ok, writable, unavailable, obs, api_entry, 
     bad = [a for a in assertions if a["結果"] == "不成立"]
     if bad:
         return "FAIL", _IMPL_DRIFT, notes + [
-            f"畫面斷言不成立：{a['目標']} {a['比對']} 預期「{a['期望']}」，實際「{a['實際']}」" for a in bad]
+            f"{a['槽']}不成立：{a['目標']} {a['比對']} 預期「{a['期望']}」，實際「{a['實際']}」" for a in bad]
     missing = [a for a in assertions if a["結果"] == "無法比對"]
     if missing:
-        return "無法比對", None, notes + [f"畫面斷言 runner 未回報實際值，待人工：{a['目標']}" for a in missing]
+        who = {"畫面斷言": "runner 未回報實際值", "資料斷言": "未經 DB 查核（缺 db-check.yml 或該目標）"}
+        return "無法比對", None, notes + [f"{a['槽']} {who[a['槽']]}，待人工：{a['目標']}" for a in missing]
     return "PASS", None, notes
 
 
-def judge(plan, fixtures, run_ui, run_api=None):
+def judge(plan, fixtures, run_ui, run_api=None, db_check=None):
     plan_ids = [c["id"] for c in plan["cases"]]
     run_ids = set(run_ui["rules"])
     missing, extra = set(plan_ids) - run_ids, run_ids - set(plan_ids)
@@ -222,20 +230,24 @@ def judge(plan, fixtures, run_ui, run_api=None):
     writable = fixtures["環境"]["允許寫入"]
     unavailable = {it["條件"] for it in fixtures["解析"] if it["結果"] == "無法備妥"}
     api_rules = (run_api or {}).get("rules", {})
+    db_rules = (db_check or {}).get("rules", {})
 
     out, totals = [], {s: 0 for s in STATUS_VALUES}
     global_signals = {"欄位找不到": sum(1 for _, (_, conf) in mapping.items() if conf == "找不到"),
                        "互動模型一致": model_ok}
     for case in plan["cases"]:
         obs = run_ui["rules"][case["id"]]
-        assertions = _eval_assertions(case["預期"].get("畫面斷言"), obs.get("畫面斷言"))
+        screen = _eval_assertions(case["預期"].get("畫面斷言"), obs.get("畫面斷言"))
+        data = _eval_assertions(case["預期"].get("資料斷言"), db_rules.get(case["id"]), "資料斷言")
+        assertions = screen + data
         status, attribution, notes = _judge_case(
             case, mapping, model_ok, writable, unavailable, obs, api_rules.get(case["id"]), assertions)
         totals[status] += 1
         out.append({"id": case["id"], "狀態": status, "歸因傾向": attribution, "備註": notes,
                     "證據": {"預期": case["預期"],
                              "觀察": {k: obs[k] for k in ("結果", "訊息", "訊息位置", "欄位變化", "視覺標記")},
-                             "畫面斷言": assertions,
+                             "畫面斷言": screen,
+                             "資料斷言": data,
                              "api": api_rules.get(case["id"])}})
 
     corrections = []

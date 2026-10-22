@@ -10,6 +10,12 @@ import json
 import re
 import sys
 
+# Windows 預設 cp950：印中文會亂碼、印 emoji 直接炸 UnicodeEncodeError。
+# 與 parse_foxpro.py 同一做法，腳本自己處理，不靠呼叫端設 PYTHONUTF8。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
+
 RESULT_VALUES = ["擋下", "放行", "未送出", "不適用"]
 EXPECT_RESULT_VALUES = ["擋下", "放行"]
 EXECUTOR_VALUES = ["ui", "api"]
@@ -22,7 +28,9 @@ FIELD_CHANGE_VALUES = ["值被還原", "值被清空", "值被帶入", "值被�
 MARK_TYPE_VALUES = ["紅星", "反白", "變色", "禁用", "啟用", "圖示", "對話框"]
 MSG_POS_VALUES = ["欄位下方", "欄位上方", "表單頂部", "toast", "對話框"]
 DATA_CLASS_VALUES = ["內部", "客戶副本"]
-ASSERT_CMP_VALUES = ["等於", "包含", "不存在", "存在", "數值等於"]
+ASSERT_CMP_VALUES = ["等於", "包含", "不存在", "存在", "數值等於", "等於目標"]
+# 期望整段是 <…>／{…}：規劃時不知道的值寫成佔位符，judge 會拿字面比對（曾造成假 FAIL）。改用 等於目標 或 資料斷言。
+PLACEHOLDER_RE = re.compile(r"^\s*(<[^<>]+>|\{[^{}]+\})\s*$")
 
 # 步驟／預期「注意」欄禁詞：命中代表寫進了結論而非機械操作資訊（防第二輪快取回灌自己的結論）。
 STALE_NOTE_RE = re.compile(r"(結果記|結果:|預期|不適用|未送出|規格)")
@@ -80,13 +88,14 @@ def _visual_marks(errs, where, items):
             _enum(errs, f"{w}.標記類型", m.get("標記類型"), MARK_TYPE_VALUES)
 
 
-def _screen_assertions(errs, where, items, expect):
-    """expect=True 驗 plan 預期 {目標, 期望, 比對}；False 驗 run-ui 觀察 {目標, 實際}。"""
+def _screen_assertions(errs, where, items, expect, slot="畫面斷言", keys=None):
+    """expect=True 驗 plan 預期 {目標, 期望, 比對}；False 驗觀察 {目標, 實際}（db-check 另帶 查詢）。"""
     if not isinstance(items, list):
-        errs.append(f"{where}: 畫面斷言 必須是 list"); return
-    keys = {"目標", "期望", "比對"} if expect else {"目標", "實際"}
+        errs.append(f"{where}: {slot} 必須是 list"); return
+    keys = keys or ({"目標", "期望", "比對"} if expect else {"目標", "實際"})
+    targets = {a.get("目標") for a in items if isinstance(a, dict)}
     for i, a in enumerate(items):
-        w = f"{where}.畫面斷言[{i}]"
+        w = f"{where}.{slot}[{i}]"
         if not _keys(errs, w, a, keys):
             continue
         if not isinstance(a.get("目標"), str) or not a["目標"].strip():
@@ -95,6 +104,10 @@ def _screen_assertions(errs, where, items, expect):
             _enum(errs, f"{w}.比對", a.get("比對"), ASSERT_CMP_VALUES)
             if a.get("比對") not in ("存在", "不存在") and a.get("期望") is None:
                 errs.append(f"{w}.期望: {a.get('比對')!r} 必須附期望值")
+            if isinstance(a.get("期望"), str) and PLACEHOLDER_RE.match(a["期望"]):
+                errs.append(f"{w}.期望: 「{a['期望']}」是佔位符，judge 會拿字面比對；改用 等於目標 或 資料斷言")
+            if a.get("比對") == "等於目標" and (a.get("期望") not in targets or a.get("期望") == a.get("目標")):
+                errs.append(f"{w}.期望: 等於目標 的期望必須是同一 {slot} 裡另一個目標名，實際 {a.get('期望')!r}")
         v = a.get("期望" if expect else "實際")
         if v is not None and (isinstance(v, bool) or not isinstance(v, (str, int, float))):
             errs.append(f"{w}.{'期望' if expect else '實際'}: 必須是 str／數值{'' if expect else '／null（找不到）'}，實際 {type(v).__name__}")
@@ -142,7 +155,16 @@ def validate_plan(doc):
     meta, cases = doc.get("meta"), doc.get("cases")
     if _keys(errs, "meta", meta, _META_KEYS):
         spec = meta.get("規格")
-        if _keys(errs, "meta.規格", spec, {"ffs", "bfs"}):
+        if isinstance(spec, dict) and "ticket" in spec:
+            # 票面模式（無 FFS 的 Bug 票）：來源是 Linear 票面，與 ffs/bfs 二擇一
+            if _keys(errs, "meta.規格", spec, {"ticket"}):
+                t = spec.get("ticket")
+                if _keys(errs, "meta.規格.ticket", t, {"票號", "updatedAt"}):
+                    if not t.get("票號") or not t.get("updatedAt"):
+                        errs.append("meta.規格.ticket: 票號與 updatedAt 不可為空")
+                    elif meta.get("票號") != t.get("票號"):
+                        errs.append(f"meta.票號 {meta.get('票號')!r} 與 meta.規格.ticket.票號 {t.get('票號')!r} 不一致")
+        elif _keys(errs, "meta.規格", spec, {"ffs", "bfs"}):
             ffs = spec.get("ffs")
             if ffs is None:
                 errs.append("meta.規格.ffs: 必須是 dict，不可為 null")
@@ -195,15 +217,16 @@ def validate_plan(doc):
                 _keys(errs, f"{w}.前置資料[{j}]", p, {"條件", "用途"})
         _steps(errs, w, c.get("步驟"))
         exp = c.get("預期")
-        if _keys(errs, f"{w}.預期", exp, _EXPECT_KEYS | {"畫面斷言"}, required=_EXPECT_KEYS):
+        if _keys(errs, f"{w}.預期", exp, _EXPECT_KEYS | {"畫面斷言", "資料斷言"}, required=_EXPECT_KEYS):
             _enum(errs, f"{w}.預期.結果", exp.get("結果"), EXPECT_RESULT_VALUES)
             _enum(errs, f"{w}.預期.訊息比對", exp.get("訊息比對"), MSG_CMP_VALUES)
             if exp.get("訊息") is not None and not isinstance(exp["訊息"], str):
                 errs.append(f"{w}.預期.訊息: 必須是 str 或 null")
             _field_changes(errs, f"{w}.預期", exp.get("欄位變化"))
             _visual_marks(errs, f"{w}.預期", exp.get("視覺標記"))
-            if "畫面斷言" in exp:
-                _screen_assertions(errs, f"{w}.預期", exp["畫面斷言"], True)
+            for slot in ("畫面斷言", "資料斷言"):
+                if slot in exp:
+                    _screen_assertions(errs, f"{w}.預期", exp[slot], True, slot)
     return errs
 
 
@@ -319,6 +342,22 @@ def validate_run_api(doc):
     return errs
 
 
+def validate_db_check(doc):
+    """fixture 跑完後唯讀查核 資料斷言 的結果；`_meta.通道` 必填（共用 DB 連線可能被並行 session 切走）。"""
+    errs, rules = _run_common(doc, "db-check")
+    if rules is None:
+        return errs
+    meta = doc.get("_meta")
+    if not isinstance(meta, dict) or not isinstance(meta.get("通道"), str) or not meta["通道"].strip():
+        errs.append("db-check._meta.通道: 必填（如「[readonly-db demo-staging]」）")
+    for rid, items in rules.items():
+        _screen_assertions(errs, f"rules[{rid}]", items, False, "資料斷言", {"目標", "實際", "查詢"})
+        for i, a in enumerate(items if isinstance(items, list) else []):
+            if isinstance(a, dict) and (not isinstance(a.get("查詢"), str) or not a.get("查詢", "").strip()):
+                errs.append(f"rules[{rid}].資料斷言[{i}].查詢: 必須是非空 str（SQL 原文）")
+    return errs
+
+
 def validate_steps(doc):
     errs = []
     if not isinstance(doc, dict):
@@ -338,7 +377,7 @@ def validate_steps(doc):
 
 
 _KINDS = {"plan": validate_plan, "fixtures": validate_fixtures, "run-ui": validate_run_ui,
-          "run-api": validate_run_api, "steps": validate_steps}
+          "run-api": validate_run_api, "steps": validate_steps, "db-check": validate_db_check}
 
 
 def main(argv):

@@ -36,7 +36,7 @@ color: cyan
 - 欄位若已有既有值，`fill` 前先 `click` 該欄再 `Control+A` 全選，再輸入新值——`fill` 工具對已有值的輸入框是附加不是取代。
 - 兩個計數分開：**步驟失敗次數**＝步驟照做不了而額外嘗試的次數；**記錄讀值次數**＝格式要求的 DOM／network 讀值。
   判準：「步驟寫得更完整就不需要這一次」→ 前者；「再完整也免不了」→ 後者。
-- **畫面斷言**：steps-only 的 case 若有 `畫面斷言目標`，對每個目標都在 `畫面斷言` 記一筆 `{目標, 實際}`（`目標` 逐字照抄）——用 `evaluate_script` 讀 DOM 的實際值（數字可帶千分位原樣記）；畫面上找不到該元素 → `實際: null`；讀不到又不確定是不是沒有 → 不寫該筆（judge 會判無法比對附待人工）。**不可只寫在 `描述` 裡**，judge 不讀 `描述`。
+- **畫面斷言**：steps-only 的 case 若有 `畫面斷言目標`，對每個目標都在 `畫面斷言` 記一筆 `{目標, 實際}`（`目標` 逐字照抄）——用 `evaluate_script` 讀 DOM 的實際值（數字可帶千分位原樣記）；畫面上找不到該元素 → `實際: null`；讀不到又不確定是不是沒有 → 不寫該筆（judge 會判無法比對附待人工）。**不可只寫在 `描述` 裡**，judge 不讀 `描述`。`實際` 只放讀到的原值，不加括號說明、判斷詞或比較結論（寫「是（原值）」會讓比對不成立）；目標要求的是判斷而非值時，照讀得到的值記，不替它下結論。
 - 步驟做不到且無法得到觀察 → `結果: null`、`步驟失敗次數 ≥ 1`，在 `描述` 寫改做了什麼；不可把猜測寫成觀察。
 - 瀏覽器：只開自己的分頁、只關自己的分頁、不 kill（Chrome 隨 session 消失）。
 - **憑證紅線**：讀登入設定檔只取需要的鍵（不 cat 整檔），密碼／token 不得回顯在任何輸出、回報或檔案；若用 Bash 查 DB 禁 `SELECT *`。
@@ -47,6 +47,7 @@ color: cyan
 ## 登入
 
 - 登入資訊只從 workspace 的 `.claude/live-drive.local.md` 取（派工 prompt 給 `<ws>`）；**不讀 `~/.claude/`**。
+- 取值逐鍵用 `sed -n 's/^live-drive-<鍵>: *//p' <檔>`（鍵＝url／username／password），**不 cat／grep 整檔、不自寫遮罩**——該檔還有別的環境帳密表格，遮罩沒蓋到的就直接進對話紀錄（曾實際發生）。密碼只出現在填登入表單那一次呼叫，用 `fill` 直接填進登入表單——**不自起 localhost／http server、不把帳密寫進任何檔案（含暫存檔）**（曾有 agent 自起帳密服務填表）。派工 URL 的 host 不是 `live-drive-url` 時，改照 `${CLAUDE_PLUGIN_ROOT}/skills/qa-verify/references/environments.md`「取其他環境帳密」按 slug 取同檔「其他環境」表的帳號／密碼；取不到 → 停下回報「無法進入畫面：<slug> 無帳密」。
 - 首次 navigate 若落在登入頁：填帳號密碼、送出，回到目標 URL。
 - 登入後仍是登入頁、403、或畫面找不到目標功能 → **停下回報「無法進入畫面：<原因>」**，不可把它記成觀察結果。
 
@@ -55,6 +56,7 @@ color: cyan
 1. 開頁前先 `list_pages`：已有同 `isolatedContext` 的頁是上一支的殘留，**不接手**（登入態與版面都不是你建立的），照樣開自己的。`new_page(url, isolatedContext: "<派工給的 isolated_context>", background: true)`，開頁後第一件事 `emulate(pageId, viewport: "1680x1000x2")`——**無條件，沒有「這次不需要」的例外**，做完 `evaluate_script` 讀 `[innerWidth, innerHeight, devicePixelRatio]`。
 2. 每次瀏覽器呼叫都明確帶自己的 `pageId`；看到「Page ids have changed」就重跑 `list_pages` 用 `isolatedContext` 認回自己的頁。
 3. 收尾 `close_page(pageId)` 再 `list_pages` 確認自己的頁已不在；只關自己的、不 kill Chrome。連不上最多試 2 次就停下回報，請呼叫端跑 `browser-doctor`。
+   工具參數寫法（`wait_for` 的 `text` 是陣列、`evaluate_script` 傳函式字串、逾時重取 uid、Quasar `fill` 有值會附加）見 `${CLAUDE_PLUGIN_ROOT}/references/browser-tooling.md`「工具呼叫速查」。
 4. 回傳必含一行 `viewport：emulate 1680x1000x2 → 實讀 [w, h, dpr]；分頁已關：true/false`；帳號密碼絕不寫進輸出檔與回傳（含「登入用 帳號/密碼 成功」這種順口交代），只寫「登入成功／失敗」。漏了第 4 條，這次派工即為未完成。
 
 isolatedContext 是全新的 cookie jar，登入要自己做（上方登入規則照舊）。MCP 註冊標準見 `${CLAUDE_PLUGIN_ROOT}/references/browser-setup.md`。

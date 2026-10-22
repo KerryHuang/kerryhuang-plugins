@@ -1,7 +1,7 @@
 ---
 name: sample-verify
 description: "對照實際 codebase 行為驗證規格的正確性與完整性：分組平行取樣原始碼、識別業務邏輯區塊、檢查行為規格的覆蓋度，彙整成落差報告。觸發：「驗證規格 vs 程式行為」「規格覆蓋度」「sample-verify」。"
-argument-hint: "<規格路徑> [原始碼範圍]"
+argument-hint: "<規格路徑> [原始碼範圍] [--full]"
 ---
 
 # Sample-Verify — 規格覆蓋度驗證
@@ -26,7 +26,21 @@ $ARGUMENTS → <規格路徑> [原始碼範圍]
 | 參數 | 必填 | 說明 |
 |------|------|------|
 | `規格路徑` | 是 | 行為規格檔路徑；未給時終止並詢問 |
-| `原始碼範圍` | 否 | 目錄或檔案清單；未給時由 Step 1 從規格反推 |
+| `原始碼範圍` | 否 | 目錄或檔案清單；未給時由 Step 1 從規格反推。明確給範圍時該範圍走全量 |
+| `--full` | 否 | 忽略錨點檔，整份重驗 |
+
+## Step 0：讀實作錨點，決定全量或增量
+
+讀規格所在功能目錄的 `analysis/impl-anchors/{規格檔名}.yml`（格式與判定細節見 [references/impl-anchors.md](references/impl-anchors.md)）。
+這份檔記錄每條規則在程式哪裡執行，以及上一輪比對時各 repo 的 commit。
+
+- **不存在**、帶 `--full`、或使用者明確給了原始碼範圍 → 全量，進 Step 1。
+- **存在** → 增量：只取「錨點 commit 之後有變動的檔」＋上輪 `deferred` 的檔＋規格改過章節所涉規則的執行檔（規格有沒有改，比對錨點檔記的規格內容 hash，不看日期）。
+  錨點 commit 已不存在（rebase、淺 clone）的 repo 改走全量。
+  變動集合為空且規格沒改 → 回報「自 <commit> 以來無變動，錨點仍有效」並結束，**不派工**。
+
+為什麼：沒有錨點時每輪都要整份重讀，規格是否過期也無從判斷；有錨點就只看真的動過的地方。
+增量模式的 Step 1 只列變動集合，不再從規格整份反推。
 
 ## Step 1：定取樣範圍
 
@@ -89,11 +103,19 @@ prompt: |
 | INACCURATE | 規格描述有誤——規格原句 vs 實際行為，標建議修正 |
 | EDGE CASES | 已載明規則的未涵蓋分支 |
 | DEAD CODE | 到不了的程式碼——**只提出，不主動清除** |
+| UNCERTAIN | 程式看不出意圖、無法斷言的區塊——**不升格為 MISSING，不替它編規則**，列給使用者判斷 |
 
 <law>
 **agent 的量化斷言要複核。** 覆蓋率、SCB 數、「規格實為 VR-001~024」這類數字，
 採信前自己抽驗一次——實測曾出現 agent 回報範圍與實際差一筆的情形。
 </law>
+
+**寫回錨點檔（每輪必做，不論報告落不落檔）**：依各組回報的「錨點」表與 `UNCERTAIN`，
+更新 `analysis/impl-anchors/{規格檔名}.yml`——`_meta.repos` 記本輪各 repo `git -C <repo> rev-parse HEAD`、
+`spec_blob` 記規格**最終版**的內容 hash（本輪有修規格就等修完再算，否則下一輪會把自己的修訂當成規格變動），
+本輪重驗的規則覆寫、其餘保留。寫完跑 YAML 解析，並逐列確認 `enforced` 指到存在的檔、沒有絕對路徑，
+才回報「解析通過」——解析過不代表內容對（實測：shell heredoc 把 `$VAR:方法名` 當修飾子展開，YAML 仍可解析）。規則與格式見 [references/impl-anchors.md](references/impl-anchors.md)。
+錨點只記「實際落在哪」，**不寫進規格正文**——規格技術中立，不得出現類別或方法名。
 
 判讀時區分兩種 MISSING：**該補進規格的業務邏輯**，與**本來就不該進規格的實作細節**
 （依 `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md` 的 owner 矩陣）。
@@ -105,9 +127,10 @@ agent 只負責找出「程式有做但規格沒寫」，**哪些值得寫進規
 
 1. `files` 全部分派完畢，沒有檔案落在任何一組之外
 2. 每組回報都收到（失敗的組已重派或已在報告標明未涵蓋）
-3. 落差報告含結論、覆蓋度統計、四類發現
+3. 落差報告含結論、覆蓋度統計、五類發現（含 UNCERTAIN），並註明本輪是全量或增量（增量時附基準 commit）
 4. 每條 MISSING／INACCURATE 都標了建議落點（哪份文件、哪一章）
-5. 已明確告知使用者下一步：補規格走 `sa-flow:requirement --change`／
+5. `analysis/impl-anchors/{規格檔名}.yml` 已寫回且解析通過
+6. 已明確告知使用者下一步：補規格走 `sa-flow:requirement --change`／
    `sa-flow:specify-backend --change`，或先開票
 
 **報告落檔位置**由使用者決定（預設不落檔，只在對話輸出）——
@@ -124,8 +147,11 @@ agent 只負責找出「程式有做但規格沒寫」，**哪些值得寫進規
 | 直接採信 agent 的覆蓋率數字 | 量化斷言自己抽驗一次 |
 | 把 DEAD_CODE 順手刪掉 | 只提出。既有 dead code 不動 |
 | 把所有 MISSING 都當成要補進規格 | 先過 `doc-boundaries.md` 的 owner 矩陣 |
+| 把方法名、檔名寫進規格正文當錨點 | 錨點只進 `analysis/impl-anchors/{規格檔名}.yml`，規格維持技術中立 |
+| 有錨點檔還每輪全量重驗 | 走 Step 0 增量；要全量請明確帶 `--full` |
 
 ## References
 
 - `${CLAUDE_PLUGIN_ROOT}/agents/spec-sampler.md` — 取樣 agent（SCB 定義與分類規則在其定義內）
 - `${CLAUDE_PLUGIN_ROOT}/references/doc-boundaries.md` — 文件邊界與 owner 矩陣
+- [references/impl-anchors.md](references/impl-anchors.md) — 實作錨點檔格式、增量判定、寫回規則

@@ -75,6 +75,17 @@ FOR EACH file in files:
 | `MISSING_EDGE_CASE` | 已載明規則的邊界分支未涵蓋 |
 | `DEAD_CODE` | 程式碼存在但到不了／沒被用 |
 | `INFRASTRUCTURE` | 非業務邏輯，不需規格覆蓋 |
+| `UNCERTAIN` | 看得出是業務分支，但看不出意圖（如兩分支結果相同、旗標語意不明）——**不要猜成 MISSING 或替它編規則** |
+
+### 橫切規則在本組檔案找不到時
+
+權限、交易、稽核、快取失效這類規則常不寫在 Handler，而是掛在全域的 filter／middleware／pipeline behavior。
+規格寫了、本組檔案卻找不到時，**先跨出 `files` 用 `Grep` 找全域掛載點**（如 `Filters.Add`、`IAsyncAuthorizationFilter`、
+`IPipelineBehavior`、`UseMiddleware`），再讀到它**對本端點的實際判定**——掛了不等於生效，
+常見是「端點沒宣告就放行」。查到就照常分類並列錨點；查完仍無著落才標 `UNCERTAIN`，寫明查過哪些掛載點。
+
+> 實例：兩組都只看 Controller 與 Handler，把 BL-001 權限判為「找不到」。
+> 實際上全域授權 filter 有掛，但 Controller 沒宣告程式代碼，filter 對未宣告端點一律放行——是實作偏離規格，不是無從判斷。
 
 ### 什麼算 SCB
 
@@ -83,6 +94,7 @@ FOR EACH file in files:
 - 狀態變更：`session.Mode = "B"`、`process.Status = Completed`
 - 外部呼叫：`await _notificationService.Send(...)`、`_mediator.Publish(event)`
 - 驗證：`throw new BusinessException(...)`、`return BadRequest(...)`
+- 回應對映：結果轉 HTTP 狀態碼與回應本體的那一層（如 Controller 的 `ToActionResult`）——成功回什麼、錯誤訊息有沒有送出去，是呼叫端看得到的契約，要跟規格的回應範例與錯誤表比對，**不歸 INFRASTRUCTURE**
 
 ### 什麼不算
 
@@ -123,12 +135,16 @@ FOR EACH file in files:
 
 #### DEAD CODE（到不了／沒被用）
 | # | 檔案:行號 | 說明 | 信心度 |
+#### UNCERTAIN（看不出意圖）
+| # | 檔案:行號 | 為什麼無法斷言 |
+#### 錨點（COVERED_* 的規則執行位置，呼叫端寫回錨點檔用）
+| 規則編號 | 執行位置（檔案:方法，或 檔案:行號） | accurate／inaccurate |
 
 ### 覆蓋度統計
 - SCB 總數：N
 - COVERED_ACCURATE：X（Y%）
 - COVERED_INACCURATE：A ／ MISSING_BUSINESS：B ／ MISSING_EDGE_CASE：C
-- DEAD_CODE：D ／ INFRASTRUCTURE（已排除）：E
+- DEAD_CODE：D ／ UNCERTAIN：U ／ INFRASTRUCTURE（已排除）：E
 ```
 
 ---
@@ -140,7 +156,8 @@ FOR EACH file in files:
 1. `files` 每一支都已完整讀過
 2. 每支檔的每個 SCB 都已分類
 3. 報告含覆蓋度統計
-4. 沒有任何檔案未檢視
+4. 每個 `COVERED_*` 的 SCB 都在「錨點」表有一列（規格編號＋執行位置）；規格沒有編號的寫「無編號＋章節」
+5. 沒有任何檔案未檢視
 
 檔案太大無法一次讀完 → 分段讀但確保全覆蓋，並在報告註明可能不完整。
 
@@ -165,4 +182,7 @@ FOR EACH file in files:
 | 把整份規格讀進來再比對 | 定向讀取。你的 context 要留給原始碼 |
 | 回報裡貼整段原始碼 | 給 `檔案:行號` ＋ 一句摘要 |
 | 找不到問題就編一個 | `SCB 總數：0` 也是有效結論 |
+| 看不懂意圖就標 MISSING 並自擬規則 | 標 `UNCERTAIN`，寫明為什麼無法斷言 |
+| 權限／交易在 Handler 找不到就標找不到 | 先查全域 filter／middleware／pipeline 與它對本端點的判定 |
+| 把 Controller 的結果轉換當基礎設施略過 | 狀態碼與回應本體是對外契約，對照規格 §API 的範例逐項比 |
 | 順手改規格或程式碼 | 你是唯讀的。修正建議寫在回報裡 |

@@ -36,6 +36,18 @@ class TestReport(unittest.TestCase):
     def setUp(self):
         self.md = render_report(PLAN, FIX, VERDICT, META)
 
+    def test_ticket_mode_header(self):
+        import copy
+        p = copy.deepcopy(PLAN)
+        p["meta"]["票號"] = "BUG-790"
+        p["meta"]["規格"] = {"ticket": {"票號": "BUG-790", "updatedAt": "2026-10-01T08:00:00Z"}}
+        md = render_report(p, FIX, VERDICT, META)
+        self.assertIn("來源 票面 BUG-790 @ 2026-10-01T08:00:00Z", md)
+        self.assertNotIn("規格 FFS", md)
+
+    def test_ffs_mode_header_unchanged(self):
+        self.assertIn("規格 FFS 99a11af0", self.md)
+
     def test_summary_line_and_verdict(self):
         self.assertIn("PASS 1 / FAIL 1 / 前端未擋 0 / BLOCKED 0 / 未執行 0 / 無法比對 0", self.md)
         self.assertIn(VERDICT["判讀"], self.md)
@@ -173,6 +185,18 @@ class TestScreenAssertionsAndDate(unittest.TestCase):
         self.assertIn("✗合計 數值等於 100→99", md)
         self.assertIn("?頁碼 等於 1→—", md)
 
+    def test_data_assertions_rendered(self):
+        v = {"cases": [{"id": "TC-Q", "狀態": "PASS", "歸因傾向": None, "備註": [],
+                        "證據": {"預期": {"結果": "放行", "訊息": None, "訊息比對": "逐字", "欄位變化": [], "視覺標記": []},
+                                 "觀察": {"結果": "放行", "訊息": None, "訊息位置": None, "欄位變化": [], "視覺標記": []},
+                                 "畫面斷言": [],
+                                 "資料斷言": [{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於", "實際": "Y", "結果": "通過"}],
+                                 "api": None}}],
+             "總計": {"PASS": 1, "FAIL": 0, "前端未擋": 0, "BLOCKED": 0, "未執行": 0, "無法比對": 0},
+             "判讀": "通過", "規格校正": [], "全域訊號": {"欄位找不到": 0, "互動模型一致": True}}
+        plan = {"meta": PLAN["meta"], "cases": [{"id": "TC-Q", "來源": {"文件": "ffs", "章節": "§1", "規則章節": "§1"}}]}
+        self.assertIn("資料斷言 ✓WORK_ORDER.STATUS 等於 Y→Y", render_report(plan, FIX, v, META))
+
     def test_fixtures_with_unquoted_date_do_not_crash(self):
         """yaml 會把 2026-09-30 解析成 date；json.dumps 沒 default=str 會 TypeError"""
         fix = {"環境": FIX["環境"], "解析": [{"條件": "x", "結果": "找到", "值": {"日期": datetime.date(2026, 9, 30)}}]}
@@ -234,6 +258,33 @@ class TestLinear(unittest.TestCase):
         self.assertIn("PASS 1 / FAIL 1", s); self.assertIn("qa-report.md", s)
         self.assertNotIn("TC-U-002", s)          # 不貼逐條
         self.assertLess(len(s.splitlines()), 12)
+
+    def test_comment_without_ref_has_no_report_line(self):
+        s = render_linear_comment(PLAN, VERDICT)
+        self.assertNotIn("報告：", s)
+
+    def test_main_linear_does_not_print_local_out_path(self):
+        import io, contextlib, tempfile, yaml
+        with tempfile.TemporaryDirectory() as d:
+            paths = {}
+            for name, obj in (("plan.yml", PLAN), ("fixtures.yml", FIX)):
+                paths[name] = os.path.join(d, name)
+                with open(paths[name], "w", encoding="utf-8") as f:
+                    yaml.safe_dump(obj, f, allow_unicode=True)
+            vj = os.path.join(d, "verdict.json")
+            with open(vj, "w", encoding="utf-8") as f:
+                json.dump(VERDICT, f, ensure_ascii=False)
+            out = os.path.join(d, "qa-report.md")
+            base = ["report.py", paths["plan.yml"], paths["fixtures.yml"], vj, "--out", out, "--linear",
+                    "--env", "w02", "--date", "2026-10-02", "--by", "t", "--mode", "唯讀"]
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                main(base)
+            self.assertNotIn(d, buf.getvalue())
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                main(base + ["--report-ref", "docs/x/qa/qa-report.md"])
+            self.assertIn("報告：docs/x/qa/qa-report.md", buf.getvalue())
 
 if __name__ == "__main__":
     unittest.main()

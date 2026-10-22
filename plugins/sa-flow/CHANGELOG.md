@@ -2,6 +2,23 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [3.1.0] - 2026-10-22
+
+### 新增
+- 新 skill `qa-sweep`：批次撈指派給我的待測票，依類別交 `qa-verify`（票面／規格模式）或 `skills/qa-sweep/references/backend-verify.md`（純後端），嚴格 PASS 自動寫回 Done 並通知父票，FAIL 整批預覽後先開 Dev 子票再退回原票；留言首行整行標記做冪等；team 與狀態名取自 `sdlc-linear-teams`，S0 先驗。
+- 新 skill `survey-existing-system`：勘察現役系統某段行為，委派 scout／silent-failure-hunter／domain-advisor 蒐證後由主 session 彙整現況分析文件，結尾建議下一步。
+- 新 skill `consolidate-docs`：票 Done 後把 `*_{票號}.md` CR 文件經事實驗證（`skills/consolidate-docs/references/verification-rules.md`）合併回主規格、改寫連結、清規格鏈中間產物、重產 SPEC-INDEX；預設 dry-run、不自動 commit。
+- 新 agent `silent-failure-hunter`：唯讀獵捕吞例外、忽略回傳、fallback 遮蓋、只 log 不傳播、無界重試五種靜默失敗；`linear-triage`、`survey-existing-system` 派發。
+- `sample-verify` 增量重驗：新增 Step 0 與 `skills/sample-verify/references/impl-anchors.md`——每份規格一個錨點檔記規則執行位置、各 repo 比對 commit 與規格內容 hash（blob），下一輪只重驗變動檔；新增 `UNCERTAIN` 類別（看不出意圖不升格 MISSING）、`--full`。
+- `qa-verify` 票面模式（`--from-ticket`）：無 FFS 的 Bug 票從票面重現步驟產 TC，報告留在工作區；`--no-comment` 供 `qa-sweep` 呼叫；環境版本閘（前端 meta build sha／後端 tag）、票面指定環境改取「其他環境」帳密。
+- `qa-verify` 資料斷言槽：`預期.資料斷言` 寫畫面讀不到的 DB 落地事實，`strip_plan.py` 另產 `db-targets.yml`，runner 跑完由 `qa-fixture` 唯讀查核寫 `db-check.yml`（`_meta.通道` 必填），judge 併入判定。
+- `references/doc-boundaries.md`：新增「票↔文件雙向註記」。
+- `shared-preludes-details.md` 中間產物表新增「實作錨點」列。
+
+### 變更
+- `spec-sampler`：橫切規則（權限、交易、稽核）本組找不到時先查全域 filter／middleware／pipeline 與它對本端點的實際判定；回應對映層不歸 INFRASTRUCTURE；回報新增 UNCERTAIN 與錨點表。
+- `qa-verify` 收尾建議下一步新增 `consolidate-docs`；`judge.py`／`validate.py` 新增「等於目標」比對與佔位符期望檢查。
+
 ## [3.0.0] - 2026-10-22
 
 ### BREAKING

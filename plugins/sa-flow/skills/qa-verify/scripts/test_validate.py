@@ -24,6 +24,13 @@ def plan(**over):
     d.update(over)
     return d
 
+def ticket_plan():
+    d = plan()
+    d["meta"]["票號"] = "BUG-790"
+    d["meta"]["規格"] = {"ticket": {"票號": "BUG-790", "updatedAt": "2026-10-01T08:00:00Z"}}
+    d["cases"][0]["來源"] = {"文件": "ticket", "章節": "BUG-790 重現步驟", "規則章節": "BUG-790 預期結果"}
+    return d
+
 class TestPlan(unittest.TestCase):
     def test_valid_plan_passes(self):
         self.assertEqual(validate_plan(plan()), [])
@@ -72,6 +79,25 @@ class TestPlan(unittest.TestCase):
     def test_bfs_null_allowed(self):
         d = plan(); d["meta"]["規格"]["bfs"] = None
         self.assertEqual(validate_plan(d), [])
+
+    def test_ticket_mode_passes(self):
+        self.assertEqual(validate_plan(ticket_plan()), [])
+
+    def test_ticket_mixed_with_ffs_rejected(self):
+        d = ticket_plan(); d["meta"]["規格"]["ffs"] = {"路徑": "docs/x.md", "sha": "abc"}
+        self.assertTrue(any("未知鍵" in e for e in validate_plan(d)))
+
+    def test_ticket_missing_updatedAt_rejected(self):
+        d = ticket_plan(); del d["meta"]["規格"]["ticket"]["updatedAt"]
+        self.assertTrue(any("updatedAt" in e for e in validate_plan(d)))
+
+    def test_ticket_null_rejected(self):
+        d = ticket_plan(); d["meta"]["規格"]["ticket"] = None
+        self.assertTrue(any("ticket" in e for e in validate_plan(d)))
+
+    def test_ticket_number_mismatch_rejected(self):
+        d = ticket_plan(); d["meta"]["票號"] = "BUG-791"
+        self.assertTrue(any("票號" in e for e in validate_plan(d)))
 
     def test_type_enum_includes_new_kinds(self):
         d = plan(); d["cases"][0]["類型"] = "範圍"
@@ -348,6 +374,55 @@ class TestStrip(unittest.TestCase):
         d["cases"][0]["步驟"][0]["目標"] = "規格所稱全域「儲存」按鈕"
         with self.assertRaises(SystemExit):
             strip(d)
+
+
+class TestDataAssertionSchema(unittest.TestCase):
+    def test_plan_data_assertions_valid(self):
+        d = plan()
+        d["cases"][0]["預期"]["資料斷言"] = [{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於"}]
+        self.assertEqual(validate_plan(d), [])
+
+    def test_plan_data_assertion_bad(self):
+        d = plan()
+        d["cases"][0]["預期"]["資料斷言"] = [{"目標": "WORK_ORDER.STATUS", "期望": None, "比對": "等於"}]
+        self.assertTrue(any("資料斷言" in e and "期望" in e for e in validate_plan(d)))
+
+    def test_placeholder_expectation_rejected(self):
+        """期望 寫 <該訂單明細之訂單單價> 之類佔位符，judge 會拿佔位符字面比對（曾造成假 FAIL）"""
+        for slot in ("畫面斷言", "資料斷言"):
+            d = plan()
+            d["cases"][0]["預期"][slot] = [{"目標": "單價", "期望": "<該訂單明細之訂單單價>", "比對": "等於"}]
+            self.assertTrue(any("佔位符" in e for e in validate_plan(d)), slot)
+
+    def test_equals_target_must_reference_same_slot_target(self):
+        d = plan()
+        d["cases"][0]["預期"]["畫面斷言"] = [{"目標": "前", "期望": None, "比對": "存在"},
+                                            {"目標": "後", "期望": "前", "比對": "等於目標"}]
+        self.assertEqual(validate_plan(d), [])
+        d["cases"][0]["預期"]["畫面斷言"] = [{"目標": "後", "期望": "前", "比對": "等於目標"}]
+        self.assertTrue(any("等於目標" in e for e in validate_plan(d)))
+
+    def test_db_check_valid_and_bad(self):
+        from validate import validate_db_check
+        ok = {"_meta": {"通道": "[readonly-db demo-staging]", "checked_at": "2026-10-05"},
+              "rules": {"TC-C-002": [{"目標": "WORK_ORDER.STATUS", "實際": "Y", "查詢": "SELECT STATUS FROM WORK_ORDER"}]}}
+        self.assertEqual(validate_db_check(ok), [])
+        self.assertTrue(validate_db_check({}))
+        bad = {"_meta": {}, "rules": {"TC-C-002": [{"目標": "WORK_ORDER.STATUS", "實際": "Y"}]}}
+        self.assertTrue(any("通道" in e for e in validate_db_check(bad)))
+        self.assertTrue(any("查詢" in e for e in validate_db_check(bad)))
+
+    def test_strip_excludes_data_assertions_and_db_targets_lists_them(self):
+        from strip_plan import strip, db_targets
+        import json
+        d = plan()
+        d["cases"][0]["預期"]["資料斷言"] = [{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於"}]
+        out = strip(d)
+        self.assertNotIn("WORK_ORDER", json.dumps(out, ensure_ascii=False))
+        t = db_targets(d)
+        self.assertEqual(t["cases"]["TC-C-002"]["目標"], ["WORK_ORDER.STATUS"])
+        self.assertNotIn("期望", json.dumps(t, ensure_ascii=False))
+        self.assertEqual(db_targets(plan())["cases"], {})
 
 if __name__ == "__main__":
     unittest.main()

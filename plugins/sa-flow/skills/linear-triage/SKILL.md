@@ -136,7 +136,7 @@ session 標題建議依格式 `[類型] 票號 標題`（`[Feature]`／`[CR]`／
 
 1. **AI 自動選戰場**：依票線索判斷要查 codebase / docs / DB，委派對應能力——現役系統行為釐清派
    `sa-flow:scout` 蒐集證據、需逐步除錯推理用 `superpowers:systematic-debugging`（若已安裝）、
-   「欄位空了/資料少了但無錯誤」逐段追資料流找被吞掉的錯誤、查實際資料/schema 用唯讀 DB 查詢工具
+   「欄位空了/資料少了但無錯誤」派 `sa-flow:silent-failure-hunter` agent 追被吞掉的錯誤、查實際資料/schema 用唯讀 DB 查詢工具
    （若專案有提供）、純讀碼定位用 Grep/Read/Explore agent。
    完整選擇準則 → references/triage-flow.md §2。
 2. 產出根因報告：**根因 + 證據（檔案:行號 / SQL 結果 / 文件）+ 影響範圍 + 建議修法方向**。

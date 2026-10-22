@@ -351,5 +351,67 @@ class TestVerdict(unittest.TestCase):
         self.assertEqual(r["判讀"], "通過")
         self.assertEqual(sum(r["總計"].values()), 1)
 
+
+class TestDataAssertions(unittest.TestCase):
+    """資料斷言：DB 落地事實（票面模式 WORK_ORDER.STATUS 之類），runner 讀不到，由 fixture 跑完後唯讀查核（曾有多張票因此假無法比對）"""
+    def run_case(self, asserts, db_rows, screen=None, screen_obs=None):
+        case = mk_case("T1", 結果="放行")
+        case["預期"]["資料斷言"] = asserts
+        if screen is not None:
+            case["預期"]["畫面斷言"] = screen
+        obs = mk_obs(結果="放行")
+        if screen_obs is not None:
+            obs["畫面斷言"] = screen_obs
+        db = None if db_rows is None else {"_meta": {"通道": "[readonly-db demo-staging]"}, "rules": {"T1": db_rows}}
+        return judge(mk_plan([case]), mk_fix(), mk_run(T1=obs), db_check=db)["cases"][0]
+
+    def test_all_hold_is_pass(self):
+        c = self.run_case([{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於"}],
+                          [{"目標": "WORK_ORDER.STATUS", "實際": "Y", "查詢": "SELECT STATUS FROM WORK_ORDER WHERE 1=0"}])
+        self.assertEqual(c["狀態"], "PASS")
+        self.assertEqual(c["證據"]["資料斷言"][0]["結果"], "通過")
+
+    def test_not_checked_is_uncomparable_with_note(self):
+        c = self.run_case([{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於"}], None)
+        self.assertEqual(c["狀態"], "無法比對")
+        self.assertTrue(any("資料斷言" in n for n in c["備註"]))
+
+    def test_failed_is_fail_labelled_data(self):
+        c = self.run_case([{"目標": "WORK_ORDER.QTY2", "期望": "18", "比對": "數值等於"}],
+                          [{"目標": "WORK_ORDER.QTY2", "實際": 12, "查詢": "SELECT QTY2 FROM WORK_ORDER"}])
+        self.assertEqual(c["狀態"], "FAIL")
+        self.assertTrue(any(n.startswith("資料斷言不成立") and "18" in n and "12" in n for n in c["備註"]))
+
+    def test_screen_and_data_both_evaluated(self):
+        c = self.run_case([{"目標": "WORK_ORDER.STATUS", "期望": "Y", "比對": "等於"}],
+                          [{"目標": "WORK_ORDER.STATUS", "實際": "Y", "查詢": "q"}],
+                          screen=[{"目標": "列數", "期望": "1", "比對": "等於"}], screen_obs=[{"目標": "列數", "實際": "2"}])
+        self.assertEqual(c["狀態"], "FAIL")
+        self.assertTrue(any(n.startswith("畫面斷言不成立") for n in c["備註"]))
+
+
+class TestEqualsTarget(unittest.TestCase):
+    """比對「等於目標」：期望寫同一槽另一個目標名，比兩個實際值（「修改後與修改前相同」不再寫成 期望「是」——曾造成假 FAIL）"""
+    def run_case(self, observed):
+        case = mk_case("T1", 結果="放行")
+        case["預期"]["畫面斷言"] = [{"目標": "廠區位置（修改前）", "期望": None, "比對": "存在"},
+                                  {"目標": "廠區位置（修改後）", "期望": "廠區位置（修改前）", "比對": "等於目標"}]
+        obs = mk_obs(結果="放行")
+        obs["畫面斷言"] = observed
+        return judge(mk_plan([case]), mk_fix(), mk_run(T1=obs))["cases"][0]
+
+    def test_same_values_pass(self):
+        c = self.run_case([{"目標": "廠區位置（修改前）", "實際": "A 棟"}, {"目標": "廠區位置（修改後）", "實際": "A 棟 "}])
+        self.assertEqual(c["狀態"], "PASS")
+
+    def test_different_values_fail(self):
+        c = self.run_case([{"目標": "廠區位置（修改前）", "實際": "A 棟"}, {"目標": "廠區位置（修改後）", "實際": "B 棟"}])
+        self.assertEqual(c["狀態"], "FAIL")
+        self.assertTrue(any("A 棟" in n and "B 棟" in n for n in c["備註"]))
+
+    def test_reference_missing_is_uncomparable(self):
+        c = self.run_case([{"目標": "廠區位置（修改後）", "實際": "A 棟"}])
+        self.assertEqual(c["狀態"], "無法比對")
+
 if __name__ == "__main__":
     unittest.main()

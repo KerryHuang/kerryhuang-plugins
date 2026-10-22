@@ -20,7 +20,7 @@ claude plugin install dev-flow
 
 | 外掛 | 版本 | 內容 |
 |------|------|------|
-| [sa-flow](./plugins/sa-flow/README.md) | 3.0.0 | SDLC 上游與驗收——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與報表、實機驗收、操作手冊，另含 FoxPro 舊系統分析 |
+| [sa-flow](./plugins/sa-flow/README.md) | 3.1.0 | SDLC 上游與驗收——需求探索、需求文件、系統分析、前後端規格、就緒度、規格驗證、Linear 開票與報表、實機驗收、操作手冊，另含 FoxPro 舊系統分析 |
 | [dev-flow](./plugins/dev-flow/README.md) | 0.1.1 | 跨語言開發工作流——git 生命週期、工作編排、context 治理 |
 | [backend-dotnet](./plugins/backend-dotnet/README.md) | 0.1.0 | .NET Clean Architecture 後端——CQRS / Repository / EF Core / Dapper 產碼、單元測試、TDD |
 | [frontend-vue](./plugins/frontend-vue/README.md) | 0.1.0 | Vue 3 + TypeScript + Quasar 前端——架構分層、composable 抽取、DevTools 除錯、i18n、OpenSpec |
@@ -32,7 +32,7 @@ claude plugin install dev-flow
 
 | 外掛 | skills | agents |
 |------|--------|--------|
-| sa-flow | `dev-feedback` `dev-readiness` `dispatch-worker` `explore` `foxpro-analyzer` `interview-prep` `issue-triage` `linear-create` `linear-daily-report` `linear-illustrate` `linear-reply` `linear-triage` `linear-weekly-report` `live-drive` `meeting-minutes` `operation-manual` `pdf-converter` `plugin-healthcheck` `qa-verify` `requirement` `retrospective` `sample-verify` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `system-analysis` `verifying-specs` `write-doc` | `browser-surveyor` `doc-fidelity-reviewer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `scout` `spec-sampler` `spec-writer` |
+| sa-flow | `consolidate-docs` `dev-feedback` `dev-readiness` `dispatch-worker` `explore` `foxpro-analyzer` `interview-prep` `issue-triage` `linear-create` `linear-daily-report` `linear-illustrate` `linear-reply` `linear-triage` `linear-weekly-report` `live-drive` `meeting-minutes` `operation-manual` `pdf-converter` `plugin-healthcheck` `qa-sweep` `qa-verify` `requirement` `retrospective` `sample-verify` `spec-chain` `spec-docs` `specify-backend` `specify-frontend` `survey-existing-system` `system-analysis` `verifying-specs` `write-doc` | `browser-surveyor` `doc-fidelity-reviewer` `domain-advisor` `manual-explorer` `manual-reviewer` `manual-writer` `qa-fixture` `qa-planner` `qa-runner-ui` `report-writer` `scout` `silent-failure-hunter` `spec-sampler` `spec-writer` |
 | dev-flow | `work-on` `feature` `implement` `spec` `commit` `review` `release` `debugging` `quality-check` `convention-first` `agent-orchestration` `context-hygiene` `worktree` `triage-branch-cleanup` | — |
 | backend-dotnet | `clean-architecture` `cqrs-handler` `repository-pattern` `domain-entity` `dapper-query` `webapi-controller` `hangfire-job` `unit-testing` `tdd-cycle` | `architect` `developer` `reviewer` `tester` `debugger` |
 | frontend-vue | `frontend-architecture` `vue-composables` `chrome-devtools-debug` `i18n-implementation` `release-workflow` `review-remote` `openspec-propose` `openspec-apply-change` `openspec-archive-change` `openspec-explore` | `code-reviewer` `test-engineer` |

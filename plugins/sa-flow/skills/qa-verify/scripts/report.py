@@ -4,6 +4,12 @@ import json
 import os
 import sys
 
+# Windows 預設 cp950：印中文會亂碼、印 emoji 直接炸 UnicodeEncodeError。
+# 與 parse_foxpro.py 同一做法，腳本自己處理，不靠呼叫端設 PYTHONUTF8。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
+
 _ORDER = ["PASS", "FAIL", "前端未擋", "BLOCKED", "未執行", "無法比對"]
 _NEEDS_HUMAN = {"FAIL", "前端未擋", "BLOCKED", "未執行", "無法比對"}
 
@@ -31,10 +37,11 @@ def _evidence(c):
         parts.append(f"欄位變化 {_fmt(o['欄位變化'])}")
     if e["視覺標記"] or o["視覺標記"]:
         parts.append(f"視覺標記 {_fmt(o['視覺標記'])}")
-    if c["證據"].get("畫面斷言"):
-        mark = {"通過": "✓", "不成立": "✗", "無法比對": "?"}
-        parts.append("畫面斷言 " + "、".join(
-            f"{mark[a['結果']]}{a['目標']} {a['比對']} {_fmt(a['期望'])}→{_fmt(a['實際'])}" for a in c["證據"]["畫面斷言"]))
+    mark = {"通過": "✓", "不成立": "✗", "無法比對": "?"}
+    for slot in ("畫面斷言", "資料斷言"):
+        if c["證據"].get(slot):
+            parts.append(f"{slot} " + "、".join(
+                f"{mark[a['結果']]}{a['目標']} {a['比對']} {_fmt(a['期望'])}→{_fmt(a['實際'])}" for a in c["證據"][slot]))
     return "；".join(parts)
 
 
@@ -57,9 +64,11 @@ def plan_patch(plan, steps_doc, run_ui):
 def render_report(plan, fixtures, verdict, meta, fixes=None, patch=None):
     m, src = plan["meta"], {c["id"]: c for c in plan["cases"]}
     gs = verdict["全域訊號"]
+    src_line = (f"規格 FFS {m['規格']['ffs']['sha']}" if "ffs" in m["規格"]
+                else f"來源 票面 {m['規格']['ticket']['票號']} @ {m['規格']['ticket']['updatedAt']}")
     L = [f"# {m['功能']}（{m['功能碼']}）QA 驗證報告", "",
          f"環境 {meta['環境']}｜租戶 {fixtures['環境']['租戶']}（{fixtures['環境']['資料類別']}）｜"
-         f"規格 FFS {m['規格']['ffs']['sha']}｜執行 {meta['執行日期']} {meta['執行者']}｜"
+         f"{src_line}｜執行 {meta['執行日期']} {meta['執行者']}｜"
          f"模式 {meta['模式']}｜含修復 {'是' if meta['含修復'] else '否'}", "",
          f"全域訊號：欄位找不到 {gs['欄位找不到']}｜互動模型 {'一致' if gs['互動模型一致'] else '不一致'}", "",
          "## 結論一行", "", _summary(verdict["總計"]), "", f"判讀：{verdict['判讀']}", "",
@@ -102,15 +111,18 @@ def render_report(plan, fixtures, verdict, meta, fixes=None, patch=None):
     return "\n".join(L) + "\n"
 
 
-def render_linear_comment(plan, verdict, report_path):
+def render_linear_comment(plan, verdict, report_ref=None):
+    # 留言會貼上 Linear：只放 docs 相對路徑，本機工作區路徑不外流（票面模式沒有 docs 落點就不印）
     m = plan["meta"]
-    return "\n".join([
+    lines = [
         f"qa-verify {m['功能']}（{m['功能碼']}）",
         _summary(verdict["總計"]),
         f"判讀：{verdict['判讀']}",
-        f"報告：{report_path}",
-        f"規格校正 {len(verdict['規格校正'])} 項；處置欄待填。",
-    ]) + "\n"
+    ]
+    if report_ref:
+        lines.append(f"報告：{report_ref}")
+    lines.append(f"規格校正 {len(verdict['規格校正'])} 項；處置欄待填。")
+    return "\n".join(lines) + "\n"
 
 
 def main(argv):
@@ -118,6 +130,7 @@ def main(argv):
     p = argparse.ArgumentParser()
     p.add_argument("plan"); p.add_argument("fixtures"); p.add_argument("verdict_json")
     p.add_argument("--out", required=True); p.add_argument("--linear", action="store_true")
+    p.add_argument("--report-ref")  # --linear 印的報告位置（docs 相對路徑）；不給就不印
     p.add_argument("--env", required=True); p.add_argument("--date", required=True)
     p.add_argument("--steps"); p.add_argument("--run-ui")  # 給了才產 plan-patch.yml
     p.add_argument("--by", required=True); p.add_argument("--mode", choices=["唯讀", "CRUD"], required=True)
@@ -134,7 +147,7 @@ def main(argv):
         with open(os.path.join(os.path.dirname(os.path.abspath(a.out)), "plan-patch.yml"), "w", encoding="utf-8") as f:
             yaml.safe_dump(patch, f, allow_unicode=True, sort_keys=False, default_flow_style=False)
     if a.linear:
-        print(render_linear_comment(plan, verdict, a.out))
+        print(render_linear_comment(plan, verdict, a.report_ref))
     return 0
 
 

@@ -155,6 +155,7 @@ docs 與程式碼同 repo 時略過。docs 在獨立 repo 時，開工前先 pul
 | 顧問桌結論 | `analysis/consultant-notes.md` | 開桌的 skill | 日期、編制、逐項結論與證據、未解爭點 |
 | 功能上下文 | `analysis/_context.yml` | 鏈上第一棒 | 功能名、模組、目錄、各文件路徑、票號、`chain_profile`、`chain_origin`（`foxpro`＝由 `foxpro-analyzer` 寫入的舊系統移植鏈）。**≤5KB 純指標，禁放分析內容**（膨脹到 19KB 被 5 棒重複讀） |
 | 決策 | `decisions.md` | 鏈上第一個拍板者 | 見 `decision-record.md` |
+| 實作錨點 | `analysis/impl-anchors/{規格檔名}.yml` | `sample-verify` | 規則編號 → 程式執行位置、各 repo 上次比對的 commit、無法斷言區塊。**只放指標**；規格正文不得出現這些類別／方法名 |
 
 讀寫協定：先讀對應檔命中即用；每筆記 `source`／`scanned_at`；缺項才補查並追加回同一檔；
 `scanned_at` 後有 migration／codebase／畫面改版→重查受影響項；這些是中間產物，結論要進規格仍依 owner 矩陣。
