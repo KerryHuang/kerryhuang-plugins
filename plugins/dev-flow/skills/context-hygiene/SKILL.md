@@ -152,7 +152,7 @@ flowchart TD
 | **Kitchen sink session** | 一任務混入無關提問後回到原任務 | 偵測到跳主題時提醒 `/clear` 或改用 `/btw` |
 | **Correcting over and over** | 反覆糾正同錯誤，failed attempts 堆滿 context | 2 次失敗後提醒 `/rewind` |
 | **Infinite exploration** | 未 scope 就叫 Claude 探索整個 codebase | 建議改用 subagent，給明確 scope |
-| **Over-specified CLAUDE.md** | CLAUDE.md 過長導致重要規則被淹沒 | 提醒檢視可否精簡或轉為 skill／rule |
+| **Over-specified CLAUDE.md** | CLAUDE.md 過長導致重要規則被淹沒 | 提醒檢視可否精簡或轉為 skill／rule；分層判準見 [references/config-layering.md](references/config-layering.md) |
 
 ## 禁止
 

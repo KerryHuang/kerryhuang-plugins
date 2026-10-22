@@ -6,7 +6,7 @@
 
 `[tooling / sdlc]` 與技術棧無關的「怎麼做事」，不綁任何專案業務。
 
-## Skills（14）
+## Skills（17）
 
 ### Git 生命週期
 | Skill | 用途 |
@@ -15,6 +15,7 @@
 | `worktree` | git worktree 建立/切換/移除，含 observable-end-state 驗證 |
 | `release` | release/hotfix 分支與合併回 develop，多 remote tag 污染防範 |
 | `triage-branch-cleanup` | 跨 branch/worktree/PR/ticket 盤點清理，四道硬 gate |
+| `submodule-relay` | submodule 容器接力：子模組 commit→push→pointer bump，`M` 方向判讀、pull／rebase 後驗 pointer |
 
 ### 工作編排
 | Skill | 用途 |
@@ -32,7 +33,9 @@
 |-------|------|
 | `context-hygiene` | 長對話 context 衛生，六動作決策樹 |
 | `convention-first` | 慣例優先，grep 既有樣板禁止擅自引入新模式 |
-| `agent-orchestration` | 多階段 agent chain / output handoff / 階段清理 |
+| `agent-orchestration` | 派工判準（自己做／subagent／獨立 worker）、多階段 agent chain / output handoff / 階段清理 |
+| `tmp-scratch` | 暫存分層：session scratchpad vs 專案 `.tmp/<YYYYMMDD>-<slug>/`、命名與清理 |
+| `dual-tool-mirror` | Claude Code ↔ Codex 設定鏡像：`.claude/` 單一來源、鏡像與 rules 注入腳本 |
 
 ## License
 
