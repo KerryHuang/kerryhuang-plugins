@@ -93,7 +93,8 @@ python3 ${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-prop
 ```
 
 腳本比對 `decisions.md` 每條 D 與四份規格 `§D`：本階段 D 正文引用卻未列 §D、階段文件 §D 缺該階段 D、
-回寫型 D（dev-readiness／verifying-specs／CR）不在任何 §D、編號斷號重號——**每筆 CRITICAL，原樣進缺失清單**，不用 agent 判。
+回寫型 D（dev-readiness／verifying-specs／CR）不在任何 §D、編號斷號重號；R5 暫定 D 正文未帶「（暫定，D-xxx 待確認）」或定案 D 殘留標記；
+R6 文件資訊版本≠CHANGELOG 最高版本——**每筆 CRITICAL，原樣進缺失清單**，不用 agent 判。
 > 曾有一輪 `--cross` 首輪 9 CRITICAL 中有 7 筆是決策未傳播；散文規則擋不住，改腳本。
 
 讀取 `$ARGUMENTS` 指定文件**一律分章定向**（先讀 SPEC-INDEX → `grep -n "^## "` 取章起行 → `Read` 帶 offset/limit 只讀當前 Task 要驗的章）。**完整模式也不整檔載入**（舊「完整模式可整檔讀」例外已取消）。範本同樣只載被查章節（`sed -n '/^## 6\./,/^## /p' ${CLAUDE_PLUGIN_ROOT}/templates/bfs.md`），**必須對照範本比對，不可憑記憶**。需整份逐章比對（章節缺漏、結構完整性）時，派 `general-purpose` subagent（`model: sonnet`）讀文件與範本，只回「章節｜缺失｜等級」清單，主 context 不載全文。

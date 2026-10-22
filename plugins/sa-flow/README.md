@@ -51,6 +51,8 @@ sdlc-spec-rules-since: 2026-10-01
 | **specify-frontend** | `/sa-flow:specify-frontend [--change] {功能描述}` | FFS／CR-FFS |
 | **dev-readiness** | `/sa-flow:dev-readiness [功能目錄]` | 就緒度報告：對抗式找出邊界缺口並回寫規格 |
 | **verifying-specs** | `/sa-flow:verifying-specs [文件] [--cross] [--recheck] [--quick\|--full]` | 驗證報告 |
+| **spec-chain** | `/sa-flow:spec-chain [票號或功能描述]` | 跨 session 協調整條規格鏈：判現況、派 herdr worker、逐棒驗收（需 herdr） |
+| **spec-docs** | 由其他 skill 引用 | 規格文件分章定向讀寫、SPEC-INDEX 格式與檢查 |
 
 ### Linear
 
@@ -83,6 +85,12 @@ sdlc-spec-rules-since: 2026-10-01
 | **write-doc** | `/sa-flow:write-doc [路徑]` | 把口述或既有內容落檔 |
 | **foxpro-analyzer** | `/sa-flow:foxpro-analyzer {檔案路徑}` | FoxPro 舊系統分析，起頭的鏈套用 parity 模式 |
 
+### 派工
+
+| 技能 | 用法 | 說明 |
+|---|---|---|
+| **dispatch-worker** | `/sa-flow:dispatch-worker [任務] [--kind claude\|codex] [--n N]` | 用 herdr 開 pane 跑另一個完整 CLI session：長任務外包、多 worker 並行、中途交接 |
+
 ### 自我進化
 
 | 技能 | 用法 | 說明 |
@@ -94,6 +102,7 @@ sdlc-spec-rules-since: 2026-10-01
 
 - **主 session 統整派工**：蒐證、撰寫、審查都派給專責 agent，主 session 只做決策與驗收（`references/dispatch-conventions.md`）。
 - **spec-writer 落檔**：FRD／SAD／BFS／FFS 由 `spec-writer` agent 依範本、證據檔與已拍板決策寫入。
+- **雙顧問討論**：流程與資料邊界互相牽制時，同一支 `domain-advisor` 以 `business-flow`／`data-boundary` 兩個視角開場後交叉辯論，最多 5 輪收斂（`references/consultant-desk.md`、`references/advisor-discussion.md`）。
 - **共用前置規則**：每一棒都先載入 `references/shared-preludes.md`（問題漏斗：實證→顧問→使用者、一次一題且題目自明、不猜測、分析嚴謹度閘、權威來源優先序、技術中立）。
 - **暫定決策**：規格鏈中途的裁決題採建議選項當暫定、不停下來問，開票前先交顧問分流再集中問（`references/decision-record.md`「暫定決策」）。
 - **subagent 模型守門**：`hooks/agent-model-guard.py` 在派通用 subagent 沒指定 model 時補 `sonnet`，避免繼承主 session 的昂貴模型。

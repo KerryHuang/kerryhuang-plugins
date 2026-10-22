@@ -2,6 +2,24 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [3.0.0] - 2026-10-22
+
+### BREAKING
+- 承接 2.2.0 的 plugin 改名 `sdlc` → `sa-flow`（skill／agent 引用改為 `sa-flow:<名稱>`）。改名屬不相容變更，依版號規則本版起升 major；2.2.0 條目保留不改寫。
+
+### 新增
+- 新 skill `dispatch-worker`：用 herdr 開 pane 跑另一個完整 CLI session（claude／codex）並派工。含 Step 0 開 pane 前數活著的 worker（≥3 先問）、`herdr_layout.py` 依 worker 數重排（主 session 最大、★ 標籤）、claude worker 寫完結果檔後主動 `SendMessage` 回報主 session（要問人前先發「在問」）、`--timeout` 必配 `--wait`、worker context > 250K 時的中途交接（寫 `_handoff` → `/clear` → 接續）、worker 不自刪暫存。
+- 新 skill `spec-chain`：跨 session 協調多棒規格鏈（判現況、定路由、派 worker、盯狀態、五項驗收、收工），`_pm-run.json` 執行狀態與 `pm_resume.py` 續跑對帳、`ctx.py` 量 context；驗收第 4 項跑決策傳播機械閘；開票前暫定題先交 `domain-advisor`（`mode: triage`）分流；暫停／恢復／狀態固定做法；`verifying-specs` 棒以 sonnet 起。
+- 新 skill `spec-docs`（原排批 3，因 `spec-chain` 驗收依賴而提前）：規格文件分章定向讀寫與 SPEC-INDEX 格式、章節編號檢查。
+- 雙顧問討論：同一支 `domain-advisor` 開兩個實例，`lens: business-flow`（業務流程）／`data-boundary`（資料與系統邊界）各自提出爭點後交叉回應，最多 5 輪、主持人依結局表判、交使用者才一次一題問。新增 `references/advisor-discussion.md`、`scripts/advisor_last_reply.py`（＋測試）；`consultant-desk.md` 新增編制選項、「雙顧問討論」與「校準與證據」兩節。
+- `domain-advisor` 新增 `discuss-open`／`discuss-reply` 模式與通用校準：通用預設以內的偏離照預設裁定，通用預設以外的偏離才交 PO；補 `Bash`（只做唯讀搜尋）。
+
+### 變更
+- `check-decision-propagation.py` 新增 R5（暫定 D 正文要帶「（暫定，D-xxx 待確認）」、定案 D 不殘留）、R6（文件資訊版本＝CHANGELOG 最高版本），並修正 CHANGELOG 在檔頭時正文被整段丟掉的問題；新增 `test_check_decision_propagation.py`。`verifying-specs`、`decision-record.md` 同步說明；`spec-writer` 自檢新增 DP（交件前跑此腳本）。
+- `chain-profile.md`：lite 判準 2 不把軟刪除與既定的復活／建新列處置算狀態機；「有疑慮一律 standard」改為點名哪一條由 PO 判一次；票面產出物列了 SAD 不算使用者指定 standard。`requirement` 9.8 同步；SA 票範本的 SAD 列只在 `chain_profile=standard` 時列。
+- 互動詢問一次一題的殘留引用一併改掉：`dev-readiness` Task 6 改逐條問、`requirement`、`specify-backend`、`pipeline`、`handoff-protocol`、`boundary-dimensions`、`decision-record` 不再引用「同質獨立裁決可批次」。
+- `shared-preludes-details.md`「規格鏈中途裁決」補回寫樣板指路與「決策傳播檢查通過後再開票」。
+
 ## [2.2.0] - 2026-10-22
 
 ### BREAKING

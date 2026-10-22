@@ -198,7 +198,7 @@ lite       ... → requirement ────────────────�
 | 通則 | 內容 | 定義處 |
 |------|------|--------|
 | **分析落檔共用** | DB 結構、既有實作、畫面現況、顧問結論一律落 `analysis/`，下游先讀檔只補缺 | `shared-preludes.md` Step 0.8 |
-| **同質裁決批次表決** | 彼此獨立、已附建議答案的裁決項一次列完，「未回覆視同採納」；禁止逐條問 | `shared-preludes.md` §互動詢問規範 |
+| **裁決一次一題** | 每個裁決各自一次 `AskUserQuestion`，附建議答案、依影響排序；不批次表決 | `shared-preludes.md` §互動詢問規範 |
 | **驗證集中鏈末** | 標準模式不跑中途驗證迴圈；`dev-readiness`（獵未寫）→ `verifying-specs`（驗已寫）各一次 | `auto-verification-loop.md` |
 | **顧問桌只開一次** | 主場在 `system-analysis`；單顧問 `domain-advisor`，不做例行 cross-review | `consultant-desk.md` |
 | **顧問觸發式介入** | SAD Step 4~6 命中 domain 訊號當場單點問，不累積到階段末整份審 | `consultant-desk.md` |

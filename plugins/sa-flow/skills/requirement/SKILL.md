@@ -160,7 +160,7 @@ $ARGUMENTS → [--change] {需求描述}
 ### 7. 疑問點總清查（寫文件前必做）
 
 逐一檢查：角色、流程順序、資料來源與格式、規則判斷條件、邊界例外、In/Out of Scope。
-仍有疑問 → 回步驟 1-2 重新搜尋或詢問使用者；**多個獨立疑問依「同質獨立裁決可批次」一次問完**。全部解決後才進步驟 8。
+仍有疑問 → 回步驟 1-2 重新搜尋或詢問使用者；**多個疑問依「互動詢問規範」逐題問**。全部解決後才進步驟 8。
 
 ### 8. 派 `spec-writer` 撰寫
 
@@ -203,8 +203,8 @@ tag 追溯（`@US-xx @BR-xxx @VR-xxx`）。
 ### 9.8 規格鏈分流判定（寫檔後、交棒前必做）
 
 依 `${CLAUDE_PLUGIN_ROOT}/references/chain-profile.md` 逐條過五條判準，決定本功能走 **standard**
-還是 **lite**（lite 跳過 `system-analysis`，其必要產物改由 `specify-backend` 承接）。**有疑慮一律走
-standard**。執行：①文字列出五條判定結果與依據 ②`AskUserQuestion` 確認（推薦項置首，description
+還是 **lite**（lite 跳過 `system-analysis`，其必要產物改由 `specify-backend` 承接）。**有疑慮的條目
+點名寫出，交確認時由 PO 判，不以「有疑慮」帶過；票面產出物列了 SAD 不算指定 standard**。執行：①文字列出五條判定結果與依據 ②`AskUserQuestion` 確認（推薦項置首，description
 寫明省掉什麼、風險是什麼）③結果寫入 `analysis/_context.yml` 的 `chain_profile`／`profile_reason`／
 `profile_decided_at`。分流確認後 append 一列到 `decisions.md`（決策＝「規格鏈分流」、選定＝
 `standard`／`lite`、依據＝命中的判準、拍板＝`PO`、階段＝`FRD`），FRD `§D` 列該編號——這一列是

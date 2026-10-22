@@ -289,7 +289,7 @@ Bug 樹**驗收人＝開票人**：既有 PM/QA 根票直接掛 Dev 時，根票
 
 ## SA 票描述範本（Feature 限定）
 
-取材 FRD §0；三流各一句重點，明細在 SAD。
+取材 FRD §0；三流各一句重點，明細在 SAD（lite 在 BFS）。SAD 列只在 `analysis/_context.yml` 的 `chain_profile=standard` 時才放——票開在 FRD 分流前時不列，免得被當成「使用者已指定完整鏈」。
 
 ```markdown
 > 📌 模組：{模組}｜{程式碼} {功能名稱}
@@ -314,13 +314,13 @@ Bug 樹**驗收人＝開票人**：既有 PM/QA 根票直接掛 Dev 時，根票
 
 | 產出物 | 路徑 | 完成 |
 |--------|------|------|
-| SAD 系統分析文件 | `{SAD 路徑}` | □ |
+| SAD 系統分析文件（`chain_profile=standard` 才列；未判定或 lite 刪此列） | `{SAD 路徑}` | □ |
 | BFS 後端規格書 | `{BFS 路徑}` | □ |
 | FFS 前端規格書（若需前端） | `{FFS 路徑}` | □ |
 
 ## Done 條件
 
-- [ ] SAD／BFS／FFS 通過 `sa-flow:verifying-specs`（含 `--cross`）
+- [ ] 依 `chain_profile` 產出的文件通過 `sa-flow:verifying-specs`（含 `--cross`）
 - [ ] 開立 QA + Dev 子票（或既有票從 Backlog 轉 Todo）
 ```
 

@@ -41,7 +41,7 @@ color: green
 | `feature` | 功能名稱、所屬模組、功能目錄 |
 | `brief` | 呼叫端整理的內容綱要——各章要寫什麼、有哪些 US／BR／VR 編號、推薦方案是哪個。**必須區分三態**（見下方 `<law>`）：已驗證為真／已驗證為不存在／未驗證 |
 | `mode` | `new`（新寫）／`change`（CR in-place 更新，此時另給 `main_doc` 與 `ticket`） |
-| `extra_checks` | 選填。本文件型別**專屬**的硬閘，逐條寫「編號｜檢查什麼｜怎麼驗」。與通用 L1~L8 一起跑，**不通過就自己修**，修不了才回報 |
+| `extra_checks` | 選填。本文件型別**專屬**的硬閘，逐條寫「編號｜檢查什麼｜怎麼驗」。與通用 L1~L8、DP 一起跑，**不通過就自己修**，修不了才回報 |
 
 ---
 
@@ -236,10 +236,11 @@ color: green
 | L6 | 無 `TBD`／`待確認`／`需釐清`／`可能`／`視情況` 殘留 | `grep -nE 'TBD\|待確認\|需釐清\|可能\|也許\|視情況'` |
 | L7 | CHANGELOG 在檔尾 | `tail -20` |
 | L8 | 沒有重抄 `boundary_row` 標為 ref 的上游產物 | 逐項對照 |
+| DP | 本文件的決策傳播零 CRITICAL：正文引用的 D、`decisions.md` 階段屬本文件的 D 都列在 §D | `python3 "${CLAUDE_PLUGIN_ROOT}/skills/verifying-specs/scripts/check-decision-propagation.py" {功能目錄}`，只看本文件那幾列；他文件的 R3 回寫型不歸你修 |
 | — | `extra_checks` 每一條 | 依該條自帶的驗法 |
 
 <law>
-**`extra_checks` 與 L1~L8 同等強制。** 呼叫端傳這些進來，是因為那是該文件型別
+**`extra_checks` 與 L1~L8、DP 同等強制。** 呼叫端傳這些進來，是因為那是該文件型別
 「不通過就沒有交付價值」的底線（例：FFS §2 是全鏈唯一完整欄位表，欄位群不齊
 ＝Dev 前端票沒東西可取材）。
 
@@ -260,7 +261,7 @@ color: green
 已寫入：{out_path}（正文 {N}KB / 預算 {M}KB，總計 {T} 行）
 章節：{寫了哪幾章，一行}
 圖：{N} 張（必畫 {M} 張皆齊 / 缺 {哪張})
-自檢：L1~L8 ＋ extra_checks 全過 ／ 未過項：{編號＋原因}
+自檢：L1~L8、DP ＋ extra_checks 全過 ／ 未過項：{編號＋原因}
 拆了附錄：{檔名，無則「無」}
 
 待補清單（呼叫端需處理）：
