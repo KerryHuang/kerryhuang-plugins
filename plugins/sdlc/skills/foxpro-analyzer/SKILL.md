@@ -111,6 +111,8 @@ python ${CLAUDE_SKILL_DIR}/scripts/parse_foxpro.py <path> --proc <name>      # �
 
 完整章節格式 → [references/analysis-templates.md](references/analysis-templates.md)
 
+完成後依動線用 AskUserQuestion 建議下一步：`sdlc:requirement {功能名稱}`（本報告是舊系統移植鏈的起點）；使用者同意才接著跑，不自動執行。
+
 ---
 
 ## 檔案類型與讀取方式

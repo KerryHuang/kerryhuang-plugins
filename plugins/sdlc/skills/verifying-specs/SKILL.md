@@ -2,6 +2,7 @@
 name: verifying-specs
 description: "實作前驗證 FRD／SAD／BFS／FFS：架構可行性、資料流正確性、DB 結構實查、跨文件追溯；--cross 做跨文件一致性。觸發：「驗證規格」「verifying-specs」。"
 context: fork
+model: sonnet
 argument-hint: "[文件路徑] [--cross] [--recheck] [--quick|--full]"
 ---
 
@@ -43,6 +44,8 @@ migration 範本）修正期間不會變，重驗是空轉。
 **修正棒收尾條件（派工樣板必含，主 session 親手小修也適用）**：① 被改文件升版號＋CHANGELOG 列本輪編號；
 ② 回報「殘留 grep」0 命中；③ 回報行數／正文體積前後。**沒升版視同未修正**——
 曾有一輪 20 餘處小修沒留紀錄，下一輪因此多出 5 條 WARNING 且無法溯源。
+
+修正棒**逐條對著報告的 `file:line` 親手改**，不派 subagent 整章重寫——整章重寫會在沒被點名的地方長出新 CRITICAL。
 
 > 實證：首輪 448 秒／5 CRITICAL，收窄範圍複驗 177 秒（省 60%）未漏，還抓到新引入的表格斷裂。
 > **複驗仍要獨立判斷，不是走過場**——量化斷言複核要求見下方 Task 2-6 `<law>`。
@@ -239,7 +242,7 @@ BFS 內部無自我重複（§2.4↔§4.2、§3↔§4.1、§12/13/14）；**SPEC
 ## 鏈末條件（交棒 `linear-create` 前）
 
 `--cross` 達 0 CRITICAL／BLOCKER 後，**必須再跑一次 BFS 單文件 `--full`**（D2 DB 逐欄／D4 平台／D5 FoxPro 是 cross 沒有的維度），兩者皆過才進 `handoff-protocol.md` 的硬性停點。
-同一鏈 `--cross` 超過兩輪＝修正棒在製造新缺口，停下回報使用者，不要第三輪。
+同一鏈 `--cross` 超過兩輪＝修正棒在製造新缺口，停下回報使用者，不要第三輪。單文件 `--full`／`--recheck` 亦同：同一文件連續第三輪就停下回報。
 
 
 ## 錯誤處理

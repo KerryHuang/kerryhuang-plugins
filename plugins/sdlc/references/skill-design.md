@@ -62,12 +62,13 @@ N 份文件），先問**這 N 個之間有沒有共用狀態**：
 有了它 gaps 才能做三方比對（規格 vs 畫面 vs 資料庫），只有畫面證據時
 手冊寫不出任何欄位限制。
 
-### 派平行 agent 的四件事
+### 派平行 agent 的五件事
 
 1. 明講「另一個 agent 正在寫 X，不要碰」——避免撞檔
 2. 各自的**輸出**檔名先分開
 3. 各自的**工作區**也要分開——`scratchpad/g1/`、`g2/`、`g3/`
 4. 匯流點（誰等誰）在 SKILL.md 標明
+5. `context: fork` 的 skill 派平行 agent 一律**前景**（同一則訊息多個 Agent 呼叫、不帶 `run_in_background`）——fork 背景派工可能先結束自己這一輪，回報送到最上層 session，匯流點就沒人接（曾在規格驗證實測發生）
 
 > 事故（`operation-manual` 三組平行標註）：輸出檔名分得很乾淨（完全不重疊），
 > 但三組都在共用 scratchpad 建暫存產生器，各自取名 `gen.py`，第 1 組**靜默覆寫**了第 3 組的。
@@ -210,3 +211,38 @@ skill 內以 `${CLAUDE_PLUGIN_ROOT}/scripts/…` 引用。
 
 體例、範本、規範這類「人也會讀、也會改」的內容放 `docs/`，skill **引用不複製**。
 兩處各存一份必然漂移。
+
+## skill 要主動提議，不靠使用者記得時機
+
+skill 一多，使用者不會記得什麼時候該用哪一支；觸發靠使用者記得，實際上就不會被觸發（回顧、回饋、取樣驗證這類 skill 長期零使用就是這樣）。
+
+| 時機類型 | 怎麼觸發 |
+|---|---|
+| 自然語言描述得出來 | description 的觸發語 |
+| 狀態型（佇列積壓、記憶將滿、票 Done） | hook 偵測狀態，agent 在**當前任務結束時**用 AskUserQuestion 提議一次；使用者拒絕就不再提 |
+| 流程型（A 做完該接 B） | skill 結尾建議下一步，並問要不要接著跑 |
+
+誤觸發的解法是「提議而不直接執行」，不是改成只能手動（`disable-model-invocation`）——skill 這麼多，使用者不會知道什麼時機點要用哪一支。
+
+流程型的寫法固定一行：「完成後依動線用 AskUserQuestion 建議下一步：{條件} → `sdlc:{下一棒}`（一句理由）；使用者同意才接著跑，不自動執行。」
+
+## 攔截／確認類 hook：除了 exit 2，任何失敗都是放行
+
+Claude Code 的 PreToolUse hook **只把 exit 2（或 JSON `permissionDecision`）當攔截**；其他任何失敗都會放行，而且不提示。安全類 hook 壞掉的樣子跟「沒命中、放行」一模一樣，不實測壞掉的情境就不會發現。
+
+某次做「寫入前確認」hook 一天踩三次：
+1. hook 指令寫死 `python3`：Windows 的 Store 版空殼存在、但一跑就 exit 9009 → 放行。
+2. Windows stdout 是 cp950：判定沒壞，但確認窗的理由變亂碼。
+3. 子程序 stderr 不是 UTF-8 → `UnicodeDecodeError` → hook exit 1 → 放行。
+
+寫任何攔截／確認類 hook 都要：
+
+- 啟動殼先**實跑**候選直譯器（`"$py" -c "import sys"`），全部失敗就在 shell 層直接輸出 ask／block，不依賴 Python。
+- stdin／stdout `reconfigure(encoding="utf-8")`；子程序釘 `PYTHONIOENCODING=utf-8`（它會蓋過 `-X utf8`），解碼用 `errors="replace"`。
+- 最外層 `except Exception` 轉成 ask／block。
+- 掛在高頻工具（如每條 Bash）上的 hook，在 shell 層先做便宜的關鍵字快篩，不相關的直接 exit 0，不要每次起直譯器。
+- 啟動殼若把 stdin 讀進變數再用 pipeline 餵直譯器，pipeline 裡的 `exec` 只取代子 shell——跑完要明確 `exit`，否則外層會繼續往下跑、重複輸出。
+- 測試要含「壞掉的直譯器」（PATH 放 exit 9009 的假 `python3`）與 `PYTHONIOENCODING=cp950` 兩種情境。
+- 改了 hook 的 command 字串，既有 session 不會重新載入；實機驗證要開新 session。
+
+反過來，**補值類 hook**（如 `hooks/agent-model-guard.py` 替未指定 model 的通用 subagent 補 `sonnet`）失敗時本來就該 fail-open：補不到值只是退回預設行為，不該擋住派工。

@@ -3,7 +3,7 @@ name: qa-runner-ui
 description: QA 實機執行：照 steps-only 計畫逐條操作，結構化記錄觀察並回寫成功步驟為快取；可依環境送出資料，唯讀環境只到送出前。只觀察不判定、不讀規格。由 qa-verify 派發，不主動觸發。
 tools: Read, Write, Bash, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__handle_dialog, mcp__chrome-devtools__list_console_messages, mcp__chrome-devtools__list_network_requests
 model: sonnet
-maxTurns: 150
+maxTurns: 350
 color: cyan
 ---
 

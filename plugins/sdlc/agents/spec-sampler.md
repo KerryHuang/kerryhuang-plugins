@@ -3,6 +3,7 @@ name: spec-sampler
 description: 規格覆蓋度取樣 agent。讀一組指定的原始碼檔，逐一識別業務邏輯區塊（SCB）並比對行為規格的覆蓋度與正確性，回傳結構化取樣報告。由 sample-verify skill 分組後平行派發，不主動觸發。唯讀，不改任何檔。
 tools: Read, Glob, Grep, Bash
 model: sonnet
+maxTurns: 80
 color: yellow
 ---
 

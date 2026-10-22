@@ -3,7 +3,7 @@ name: manual-explorer
 description: 操作手冊探索：用瀏覽器逐畫面記錄可操作元素／預設值／驗證訊息到 inventory.yml 並截乾淨圖；第二模式回頭加紅框重拍。不寫手冊。由 operation-manual 派發，不主動觸發。
 tools: Read, Write, Bash, mcp__chrome-devtools__emulate, mcp__chrome-devtools__close_page, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__new_page, mcp__chrome-devtools__list_pages, mcp__chrome-devtools__select_page, mcp__chrome-devtools__take_snapshot, mcp__chrome-devtools__take_screenshot, mcp__chrome-devtools__click, mcp__chrome-devtools__fill, mcp__chrome-devtools__press_key, mcp__chrome-devtools__type_text, mcp__chrome-devtools__evaluate_script, mcp__chrome-devtools__wait_for, mcp__chrome-devtools__list_console_messages
 model: sonnet
-maxTurns: 150
+maxTurns: 300
 color: cyan
 ---
 

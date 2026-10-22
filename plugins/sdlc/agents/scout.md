@@ -2,6 +2,7 @@
 name: scout
 description: 證據蒐集：codebase／DB／文件勘察結果，供 domain-advisor 與規格撰寫共用。只列證據不解讀。由 explore／operation-manual 派發，不主動觸發。
 model: sonnet
+maxTurns: 100
 ---
 
 # Scout — 共享證據勘察員

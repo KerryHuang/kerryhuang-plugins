@@ -104,6 +104,8 @@ fixtures `結果: 建立` 的每條，依 `清理` 產 UPDATE 語句列給使用
 Step 0 已降級者，改為報告「環境與前置資料」節有一行「未回票：Linear 不可用」；
 `總計` 六個數相加＝plan 的 TC 數（少一條就是 judge 沒跑完，不可回報完成）。
 
+完成後依動線用 AskUserQuestion 建議下一步：處置有「開 Bug」→ `sdlc:linear-create` 開 Bug 樹（本 skill 不開票）；規格校正清單有「改規格」→ 依 `references/cr-update-flow.md` 回寫規格；使用者同意才接著跑，不自動執行。
+
 **瀏覽器收尾**：agent 只關自己的分頁；主 session 若為本次手動起過任何 Chrome（含 9222 附掛），在回報完成的同一輪關掉並驗證（`curl -s -m 2 http://127.0.0.1:9222/json/version` 無回應、無 `puppeteer_dev_chrome_profile`／`claude-shared-chrome` 行程）。
 
 ## 不做

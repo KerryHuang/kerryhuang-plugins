@@ -94,7 +94,9 @@ sdlc-spec-rules-since: 2026-10-01
 
 - **主 session 統整派工**：蒐證、撰寫、審查都派給專責 agent，主 session 只做決策與驗收（`references/dispatch-conventions.md`）。
 - **spec-writer 落檔**：FRD／SAD／BFS／FFS 由 `spec-writer` agent 依範本、證據檔與已拍板決策寫入。
-- **共用前置規則**：每一棒都先載入 `references/shared-preludes.md`（先推導再詢問、不猜測、權威來源優先序、技術中立）。
+- **共用前置規則**：每一棒都先載入 `references/shared-preludes.md`（問題漏斗：實證→顧問→使用者、一次一題且題目自明、不猜測、分析嚴謹度閘、權威來源優先序、技術中立）。
+- **暫定決策**：規格鏈中途的裁決題採建議選項當暫定、不停下來問，開票前先交顧問分流再集中問（`references/decision-record.md`「暫定決策」）。
+- **subagent 模型守門**：`hooks/agent-model-guard.py` 在派通用 subagent 沒指定 model 時補 `sonnet`，避免繼承主 session 的昂貴模型。
 - **分析產物共用**：勘察結果落在 `{功能目錄}/analysis/`，下游先讀再補缺，不重複蒐證。
 - **chain profile**：依功能規模走完整鏈或 lite 鏈，小功能不付大功能的流程稅（`references/chain-profile.md`）。
 
