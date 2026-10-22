@@ -35,7 +35,21 @@ sdlc-spec-rules-since: 2026-10-01
 | `sdlc-program-code-inventory` | 功能代碼盤點文件位置（權限控管用） | 跳過功能代碼查核 |
 | `sdlc-spec-rules-since` | 畫面規格新規範的生效日，早於此日且本次未觸及的畫面降為 INFO | 全部文件都適用 |
 
-選配整合：Linear MCP、`chrome-devtools` MCP（實機操作）、唯讀 DB 查詢 MCP、Graphify。偵測不到就降級或跳過，不會中斷流程。
+設定鍵沿用 `sdlc-` 前綴：外掛 2.2.0 由 `sdlc` 改名為 `sa-flow` 時刻意不改鍵名，既有專案的 `CLAUDE.md` 不用跟著改。
+
+## 前置需求
+
+| 需要 | 用在哪 | 沒有時 |
+|---|---|---|
+| Python 3（`python3` 或 `python`） | subagent 模型守門 hook，以及 qa-verify、verifying-specs、spec-chain 等 skill 附的腳本 | hook 直接放行不擋；用到腳本的步驟會失敗 |
+| [herdr](https://herdr.dev)（終端 agent 多工器） | `spec-chain`、`dispatch-worker`、顧問討論的 pane 模式 | `dispatch-worker` 改派 subagent 或留在本 session 做；`spec-chain` 改成單 session 逐棒接手（見 `references/handoff-protocol.md`）；顧問討論改用 subagent 模式 |
+| Linear MCP | `linear-*`、`qa-sweep`、各規格 skill 的開票與回票 | 開票、回票步驟跳過 |
+| `chrome-devtools` MCP | `live-drive`、`qa-verify`、`operation-manual`、`linear-illustrate` 等實機操作 | 實機步驟跳過，改用靜態證據 |
+| 唯讀 DB 查詢 MCP | 規格與驗收時查 schema、抽樣實際資料 | 改讀程式碼與文件，結論標為未對過實際資料 |
+| Graphify | 先查文件圖譜索引再讀原文 | 直接搜尋文件 |
+| Python 套件（依 skill 說明安裝） | `pdf-converter`、`linear-illustrate` 的轉檔與影像處理 | 該 skill 會在開頭提示要裝什麼 |
+
+除了 Python 3，其他都是選配：偵測不到就降級或跳過，不會中斷流程。
 
 ## 技能一覽
 
