@@ -2,6 +2,11 @@
 
 格式：每次改動 `skills/`、`agents/`、`references/` 時，於最上方新增版本條目並同步 bump 版號（規則見 `.claude/rules/version-consistency.md`）。
 
+## [3.1.1] - 2026-11-03
+
+### 變更
+- `dispatch-worker` Step 0：拿掉「開 pane 前數活著的 worker，已有 3 個以上先問使用者」；派工數量不再設門檻。
+
 ## [3.1.0] - 2026-10-22
 
 ### 新增

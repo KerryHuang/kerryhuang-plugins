@@ -16,7 +16,6 @@ argument-hint: "[任務說明] [--kind claude|codex] [--n <worker 數>]"
 
 - `test "${HERDR_ENV:-}" = 1` 不成立 → 不呼叫任何 herdr 控制指令（會抓到別人的 pane）；短任務改派 subagent，長任務留在本 session 做並告知使用者。
 - 成立 → 第一次用先讀 `herdr --skill`；衝突時以本檔為準。
-- 🔴 開 pane 前先 `herdr agent list` 數活著的 worker：**已有 3 個以上 → 先停下問使用者**（AskUserQuestion：照派／排隊等一個收工／改派 subagent），題目附活著的 worker 清單。每個 claude worker 開場約 74K tokens、每一輪都重讀，並行數直接乘上用量（曾有一天高峰同時二十多個 session，一天吃掉過半週用量）。使用者在本 session 對同一批派工答過「照派」就不再重問。
 - cwd 必須是 Claude Code 開過的目錄，否則 worker 卡在信任對話框、沒人能回答（檢查見 commands.md）。
 - herdr 指令不加 `2>/dev/null`（錯誤全在 stderr）。不要從 Claude Code 內啟 herdr server：`CLAUDE_CODE_CHILD_SESSION` 會被繼承，pane 內 transcript 不落檔（macOS 用 `brew services start herdr`）。
 
